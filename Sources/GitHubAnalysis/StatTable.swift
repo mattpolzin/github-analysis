@@ -199,7 +199,7 @@ struct StatTable {
                 "Limiting lower bound",
                 "Limiting repo",
 				"Recommendation",
-				limitMatters ? "indicates value affected by limits" : ""
+				limitMatters ? "indicates value effected by limits" : ""
         ])
     }
 
