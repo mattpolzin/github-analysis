@@ -312,7 +312,7 @@ func applyFilters() {
 		earliestDateFilter = earliestDate
 
         // weed out all events earlier than earliest date
-        allEvents = allEvents.filter { $0.createdAt > earliestDate }
+        allEvents = allEvents.filter { $0.createdAt >= earliestDate }
 
         print("    \(allEvents.count) events were newer than \(earliestDate)")
 
