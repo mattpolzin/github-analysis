@@ -14,6 +14,10 @@ public protocol Stat: CustomStringConvertible {
 	static var limitless: Bool { get }
 }
 
+public extension Stat {
+	var limitless: Bool { return Self.limitless }
+}
+
 public protocol Bound {}
 public enum Limited: Bound {}
 public enum Limitless: Bound {}

@@ -11,15 +11,23 @@ private protocol Column {
     var values: [String] { get }
 }
 
+private let kLimitedMarker = "†"
 
 /// Organize available aggregated stats into a table
 struct StatTable {
     private let orgStat: OrgStat
     private let users: [Username] // important to always order the same way
-
+	private let limitMatters: Bool
+	
     init(orgStat: OrgStat) {
         self.orgStat = orgStat
         self.users = Array(orgStat.userStats.keys)
+		
+		limitMatters = orgStat.earliestReliable.date.flatMap { earliestReliable in
+			orgStat.earliestEvent.map { earliestAvailable in
+				return earliestReliable == earliestAvailable
+			}
+		} ?? true
     }
 
     private typealias UserValue = String
@@ -86,18 +94,18 @@ struct StatTable {
     private var prOpenedColumn: UserColumn {
         return .init(
             header: "PRs opened",
-			total: String(describing: orgStat.prsOpened),
-            average: String(describing: orgStat.avgPrsOpened),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.opened) } ?? "" }
+			total: string(describing: orgStat.prsOpened),
+            average: string(describing: orgStat.avgPrsOpened),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.opened) } ?? "" }
         )
     }
 
     private var prClosedColumn: UserColumn {
         return .init(
             header: "PRs closed",
-            total: String(describing: orgStat.prsClosed),
-            average: String(describing: orgStat.avgPrsClosed),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.closed) } ?? "" }
+            total: string(describing: orgStat.prsClosed),
+            average: string(describing: orgStat.avgPrsClosed),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.closed) } ?? "" }
         )
     }
 
@@ -105,53 +113,53 @@ struct StatTable {
         return .init(
             header: "Average PR open length (days)",
             total: "\\",
-            average: String(describing: orgStat.avgPROpenLength/(60 * 60 * 24)),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
+            average: string(describing: orgStat.avgPROpenLength/(60 * 60 * 24)),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
         )
     }
 
     private var prCommentsColumn: UserColumn {
         return .init(
             header: "PR comments",
-            total: String(describing: orgStat.prComments),
-            average: String(describing: orgStat.avgPrComments),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.commentEvents) } ?? "" }
+            total: string(describing: orgStat.prComments),
+            average: string(describing: orgStat.avgPrComments),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.commentEvents) } ?? "" }
         )
     }
 
     private var linesOfCodeAddedColumn: UserColumn {
         return .init(
             header: "LOC Added",
-            total: String(describing: orgStat.linesAdded),
-            average: String(describing: orgStat.avgLinesAdded),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.linesAdded) } ?? "" }
+            total: string(describing: orgStat.linesAdded),
+            average: string(describing: orgStat.avgLinesAdded),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesAdded) } ?? "" }
         )
     }
 
     private var linesOfCodeDeletedColumn: UserColumn {
         return .init(
             header: "LOC Deleted",
-            total: String(describing: orgStat.linesDeleted),
-            average: String(describing: orgStat.avgLinesDeleted),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.linesDeleted) } ?? "" }
+            total: string(describing: orgStat.linesDeleted),
+            average: string(describing: orgStat.avgLinesDeleted),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesDeleted) } ?? "" }
         )
     }
 
     private var totalLinesOfCodeColumn: UserColumn {
         return .init(
             header: "Total LOC",
-            total: String(describing: orgStat.lines),
-            average: String(describing: orgStat.avgLines),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.lines) } ?? "" }
+            total: string(describing: orgStat.lines),
+            average: string(describing: orgStat.avgLines),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.lines) } ?? "" }
         )
     }
 
     private var commitsColumn: UserColumn {
         return .init(
             header: "Commits",
-            total: String(describing: orgStat.commits),
-            average: String(describing: orgStat.avgCommits),
-            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.commits) } ?? "" }
+            total: string(describing: orgStat.commits),
+            average: string(describing: orgStat.avgCommits),
+            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.commits) } ?? "" }
         )
     }
 
@@ -166,7 +174,8 @@ struct StatTable {
                 "Repositories analyzed",
                 "Earliest event analyzed",
                 "Limiting lower bound",
-                "Limiting repo"
+                "Limiting repo",
+				"\(kLimitedMarker) indicates value affected by limits"
         ])
     }
 
@@ -180,6 +189,14 @@ struct StatTable {
 				String(describing: orgStat.earliestReliable.limitingRepo)
         ])
     }
+	
+	private func string<B: Bound, T: CustomStringConvertible>(describing stat: BasicStat<B, T>) -> String {
+		let statValue = String(describing: stat)
+		
+		// The limit matters if the earliest reliable date for the aggregate data is later
+		// than the earliest date.
+		return limitMatters && !stat.limitless ? "\(statValue)\(kLimitedMarker)" : statValue
+	}
 }
 
 extension StatTable {
