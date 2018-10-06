@@ -97,7 +97,7 @@ let usersFilter = { username in
     return inputs.array(named: kUsersArg)?.contains(username) ?? true
 }
 
-// prepare cache file
+// prepare cache file variables
 let currentDirectory = FileManager.default.currentDirectoryPath
 let defaultCacheFileLocation = URL(fileURLWithPath: currentDirectory).appendingPathComponent("github_analysis_cache").appendingPathExtension("json")
 let cacheFileLocation = inputs.variable(named: kCacheFileArg).map(URL.init(fileURLWithPath:))
@@ -302,11 +302,14 @@ func handle(stats response: DataResponse<Data>, repository: String) {
 }
 
 func applyFilters() {
-    // weed out all the events for repositories not being analyzed
+    // weed out all the events for repositories not being analyzed.
+	// not necessary for stats because stats are grabbed fresh from API for each repo.
+	// we need this step for events because the cache can contain events for repos not
+	// being analyzed this time.
     allEvents = allEvents.filter { $0.data.repositoryNames.map(repositories.contains).contains(true) }
 
     print("\(allEvents.count) events across repositories: \(repositories.joined(separator: ", "))")
-    print("\(allStats.count) contributions.")
+    print("\(allStats.count) (user, repository) pairings.")
 
     if let earliestDateString = inputs.variable(named: kEarliestDateArg) {
         guard let earliestDate = gitDatetimeFormatter.date(from: earliestDateString) ?? gitDateFormatter.date(from: earliestDateString) else {
@@ -320,7 +323,7 @@ func applyFilters() {
 
         print("    \(allEvents.count) events were newer than \(earliestDate)")
 
-        // weed out all contributions earlier than earliest date
+        // weed out all (user, repository) pairings earlier than earliest date
         allStats = Set(allStats.map { contributor in
             RepoContributor(repository: contributor.repository,
                             contributor: GitHubContributor(author: contributor.contributor.author,
@@ -334,12 +337,12 @@ func applyFilters() {
 			fatalError("Please specify your datetimes in the UTC timezone in the format: YYYY-MM-DDTHH:MM:SSZ -- OR -- use dates of the format: YYYY-MM-DD")
 		}
 		
-		// weed out all events earlier than earliest date
+		// weed out all events later than latest date
 		allEvents = allEvents.filter { $0.createdAt <= latestDate }
 		
 		print("    \(allEvents.count) events were older than \(latestDate)")
 		
-		// weed out all contributions earlier than earliest date
+		// weed out all (user, repository) pairings later than latest date
 		allStats = Set(allStats.map { contributor in
 			RepoContributor(repository: contributor.repository,
 							contributor: GitHubContributor(author: contributor.contributor.author,
@@ -357,7 +360,7 @@ func applyFilters() {
         // weed out all the contributions for users not in the filter
         allStats = allStats.filter { usersFilter($0.contributor.author.login) }
 
-        print("     \(allStats.count) contributions after filtering out users.")
+        print("     \(allStats.count) (user, repository) pairings after filtering out users.")
     }
 }
 
@@ -393,12 +396,12 @@ func startAnalysis() {
         } catch {
             print("Failed to write CSV File at: \(csvUrl.absoluteString)")
         }
+		print("Done writing CSV file.")
     }
 }
 
 // MARK: Kickoff
 
-// read cache
 readCache()
 
 for repository in repositories {
@@ -411,7 +414,7 @@ for repository in repositories {
         .urlRequest
     ).responseData(completionHandler: handle(events:))
 
-    // get all contributors
+    // get all stats for each repo
     analysisRequestsInFlight += 1
     Alamofire.request(
         GitHubRequest.stats(with: personalAccessToken,
@@ -425,11 +428,8 @@ for repository in repositories {
 while analysisRequestsInFlight > 0 &&
     runLoop.run(mode: .defaultRunLoopMode, before: distantFuture) {}
 
-// write cache
 writeCache()
 
-// apply filters
 applyFilters()
 
-// analyze data
 startAnalysis()
