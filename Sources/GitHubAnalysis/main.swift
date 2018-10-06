@@ -53,9 +53,13 @@ struct GitHubAnalysisUsage: Usage {
                                                  valueFormat: "repo1,repo2,repo3...",
                                                  positioning: .fixed),
                                     ArgumentRule(name: kEarliestDateArg,
-                                                 usage: "Specify a datetime or a date that should be used as the cutoff before which GitHub data will not be analyzed.",
+                                                 usage: "Specify a datetime or a date that should be used as the cutoff before which GitHub data will not be analyzed. Note that LOC and commit stats are available by the week, so this filter will apply to the week start date for those stats.",
                                                  valueFormat: "{YYYY-MM-DDTHH:MM:SSZ | YYYY-MM-DD}",
                                                  positioning: .floating),
+									ArgumentRule(name: kLatestDateArg,
+												 usage: "Specify a datetime or a date that should be used as the cutoff after which GitHub data will not be analyzed. Note that LOC and commit stats are available by the week, so this filter will apply to the week start date for those stats.",
+												 valueFormat: "{YYYY-MM-DDTHH:MM:SSZ | YYYY-MM-DD}",
+												 positioning: .floating),
                                     ArgumentRule(name: kUsersArg,
                                                  usage: "Filter down to the given list of users for analysis. If not specified, all users will be analyzed.",
                                                  valueFormat: "user1,user2,user3...",
@@ -320,10 +324,29 @@ func applyFilters() {
         allStats = Set(allStats.map { contributor in
             RepoContributor(repository: contributor.repository,
                             contributor: GitHubContributor(author: contributor.contributor.author,
-                                                           totalCommits: contributor.contributor.totalCommits,
+                                                           allTimeTotalCommits: contributor.contributor.allTimeTotalCommits,
                                                            weeklyStats: contributor.contributor.weeklyStats.filter { $0.weekStart > earliestDate }))
         })
     }
+	
+	if let latestDateString = inputs.variable(named: kLatestDateArg) {
+		guard let latestDate = gitDatetimeFormatter.date(from: latestDateString) ?? gitDateFormatter.date(from: latestDateString) else {
+			fatalError("Please specify your datetimes in the UTC timezone in the format: YYYY-MM-DDTHH:MM:SSZ -- OR -- use dates of the format: YYYY-MM-DD")
+		}
+		
+		// weed out all events earlier than earliest date
+		allEvents = allEvents.filter { $0.createdAt <= latestDate }
+		
+		print("    \(allEvents.count) events were older than \(latestDate)")
+		
+		// weed out all contributions earlier than earliest date
+		allStats = Set(allStats.map { contributor in
+			RepoContributor(repository: contributor.repository,
+							contributor: GitHubContributor(author: contributor.contributor.author,
+														   allTimeTotalCommits: contributor.contributor.allTimeTotalCommits,
+														   weeklyStats: contributor.contributor.weeklyStats.filter { $0.weekStart <= latestDate }))
+		})
+	}
 
     if let users = inputs.array(named: kUsersArg)?.joined(separator: ", ") {
         // weed out all events for users not in the filter

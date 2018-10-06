@@ -14,6 +14,7 @@ let kRepositoriesArgPos = 1
 let kRepositoriesArg = "repositories"
 
 let kEarliestDateArg = "-later-than"
+let kLatestDateArg = "-earlier-than"
 let kUsersArg = "-users"
 let kCacheFileArg = "-cache"
 

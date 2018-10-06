@@ -9,12 +9,12 @@ import Foundation
 
 struct GitHubContributor: Codable, Equatable {
     let author: GitHubUser
-    let totalCommits: Int
+    let allTimeTotalCommits: Int
     let weeklyStats: [Stats]
 
     enum CodingKeys: String, CodingKey {
         case author
-        case totalCommits = "total"
+        case allTimeTotalCommits = "total"
         case weeklyStats = "weeks"
     }
 
