@@ -134,6 +134,7 @@ gitDateFormatter.dateFormat = "yyyy-MM-dd"
 
 
 // MARK: Events and Stats Globals
+var earliestDateFilter: Date?
 var allEvents = Set<GitHubEvent>()
 var allStats = Set<RepoContributor>()
 
@@ -307,6 +308,8 @@ func applyFilters() {
         guard let earliestDate = gitDatetimeFormatter.date(from: earliestDateString) ?? gitDateFormatter.date(from: earliestDateString) else {
             fatalError("Please specify your datetimes in the UTC timezone in the format: YYYY-MM-DDTHH:MM:SSZ -- OR -- use dates of the format: YYYY-MM-DD")
         }
+		
+		earliestDateFilter = earliestDate
 
         // weed out all events earlier than earliest date
         allEvents = allEvents.filter { $0.createdAt > earliestDate }
@@ -343,41 +346,22 @@ func startAnalysis() {
     print("")
     let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: repositoryOwner)
 
-	if let earliestReliableDate = orgStats.earliestReliable.date {
-		print("Limiting lower bound: \(gitDatetimeFormatter.string(from: earliestReliableDate))")
-		print("Limiting repo: \(orgStats.earliestReliable.limitingRepo)")
-	} else {
-		print("No repositories analyzed any events in the date range you specifed.")
+    print("")
+
+	let table = StatTable(orgStat: orgStats, earliestDateFilter: earliestDateFilter)
+	
+	func fillIfBlank(idx: Int, in array: [String]) -> String {
+		return array.count > idx ? array[idx] : " "
+	}
+	
+	for column in table.columnStack {
+		for idx in 0..<max(column.0.count, column.1.count) {
+			print("\(fillIfBlank(idx: idx, in: column.0)): \(fillIfBlank(idx: idx, in: column.1))")
+		}
+		print("")
 	}
 
-    print("")
-
-    print("\(orgStats.prsOpened) PRs opened.")
-    print("\(orgStats.prsClosed) PRs closed.")
-    print("Avg PR open length in days: \(orgStats.avgPROpenLength / (60 * 60 * 24))")
-    print("Pull Requests opened by each user:")
-    for user in orgStats.userStats {
-        print("\(user.key): \(user.value.pullRequestStat.opened)")
-    }
-
-    print("")
-
-    print("\(orgStats.prComments) comments left on PRs.")
-    print("Comments left by each user:")
-    for user in orgStats.userStats {
-        print("\(user.key): \(user.value.pullRequestStat.commentEvents)")
-    }
-
-    print("")
-
-    print("Lines of Code Added and Removed by each user:")
-    for user in orgStats.userStats {
-        print("\(user.key): +\(user.value.codeStat.linesAdded), -\(user.value.codeStat.linesDeleted)")
-    }
-
     if inputs.isFlagSet(named: kOutputCSVFlag) {
-        let table = StatTable(orgStat: orgStats)
-        
         print("")
         print("Writing CSV file to github_analysis.csv...")
         let csvUrl = URL(fileURLWithPath: currentDirectory).appendingPathComponent("github_analysis").appendingPathExtension("csv")

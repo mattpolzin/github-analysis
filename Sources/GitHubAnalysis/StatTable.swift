@@ -19,13 +19,18 @@ struct StatTable {
     private let users: [Username] // important to always order the same way
 	private let limitMatters: Bool
 	
-    init(orgStat: OrgStat) {
+	init(orgStat: OrgStat, earliestDateFilter: Date?) {
         self.orgStat = orgStat
         self.users = Array(orgStat.userStats.keys)
 		
+		// The limit matters if the earliest reliable date for the aggregate data is later
+		// than the earliest date filter (i.e. all analyzed data originates from later in
+		// time than the lower limit filter).
 		limitMatters = orgStat.earliestReliable.date.flatMap { earliestReliable in
-			orgStat.earliestEvent.map { earliestAvailable in
-				return earliestReliable == earliestAvailable
+			earliestDateFilter
+				.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) }
+				.map { earliestFilter in
+				return earliestReliable > earliestFilter
 			}
 		} ?? true
     }
@@ -54,21 +59,39 @@ struct StatTable {
 
     private typealias Row = [String]
 
+	private struct Section {
+		let indexColumn: Column
+		let bodyColumns: [Column]
+	}
+	
+	private var sections: [Section] {
+		return [
+			.init(indexColumn: indexColumn,
+				  bodyColumns: [
+					prOpenedColumn,
+					prClosedColumn,
+					avgPROpenLength,
+					prCommentsColumn,
+					linesOfCodeAddedColumn,
+					linesOfCodeDeletedColumn,
+					totalLinesOfCodeColumn,
+					commitsColumn
+				]
+			),
+			.init(indexColumn: analysisLimitsIndexColumn,
+				  bodyColumns: [
+					analysisLimitsColumn
+				]
+			)
+		]
+	}
+
     private var columns: [Column] {
-        return [
-            indexColumn,
-            prOpenedColumn,
-            prClosedColumn,
-            avgPROpenLength,
-            prCommentsColumn,
-            linesOfCodeAddedColumn,
-            linesOfCodeDeletedColumn,
-            totalLinesOfCodeColumn,
-            commitsColumn,
-            blankColumn,
-            analysisLimitsIndexColumn,
-            analysisLimitsColumn
-        ]
+		return Array(
+			sections
+				.map { [$0.indexColumn] + $0.bodyColumns }
+				.joined(separator: [blankColumn])
+		)
     }
 
     private var rows: [Row] {
@@ -85,8 +108,8 @@ struct StatTable {
     private var indexColumn: UserColumn {
         return .init(
             header: "",
-            total: "Org Total",
-            average: "Org Average",
+            total: "Total",
+            average: "User Average",
             userValues: users
         )
     }
@@ -95,7 +118,7 @@ struct StatTable {
         return .init(
             header: "PRs opened",
 			total: string(describing: orgStat.prsOpened),
-            average: string(describing: orgStat.avgPrsOpened),
+            average: string(describing: orgStat.avgPrsOpenedPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.opened) } ?? "" }
         )
     }
@@ -104,7 +127,7 @@ struct StatTable {
         return .init(
             header: "PRs closed",
             total: string(describing: orgStat.prsClosed),
-            average: string(describing: orgStat.avgPrsClosed),
+            average: string(describing: orgStat.avgPrsClosedPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.closed) } ?? "" }
         )
     }
@@ -122,7 +145,7 @@ struct StatTable {
         return .init(
             header: "PR comments",
             total: string(describing: orgStat.prComments),
-            average: string(describing: orgStat.avgPrComments),
+            average: string(describing: orgStat.avgPrCommentsPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.commentEvents) } ?? "" }
         )
     }
@@ -131,7 +154,7 @@ struct StatTable {
         return .init(
             header: "LOC Added",
             total: string(describing: orgStat.linesAdded),
-            average: string(describing: orgStat.avgLinesAdded),
+            average: string(describing: orgStat.avgLinesAddedPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesAdded) } ?? "" }
         )
     }
@@ -140,7 +163,7 @@ struct StatTable {
         return .init(
             header: "LOC Deleted",
             total: string(describing: orgStat.linesDeleted),
-            average: string(describing: orgStat.avgLinesDeleted),
+            average: string(describing: orgStat.avgLinesDeletedPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesDeleted) } ?? "" }
         )
     }
@@ -149,7 +172,7 @@ struct StatTable {
         return .init(
             header: "Total LOC",
             total: string(describing: orgStat.lines),
-            average: string(describing: orgStat.avgLines),
+            average: string(describing: orgStat.avgLinesPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.lines) } ?? "" }
         )
     }
@@ -158,12 +181,12 @@ struct StatTable {
         return .init(
             header: "Commits",
             total: string(describing: orgStat.commits),
-            average: string(describing: orgStat.avgCommits),
+            average: string(describing: orgStat.avgCommitsPerUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.commits) } ?? "" }
         )
     }
 
-    // MARK: Org Columns
+    // MARK: Repo Columns
 	// none currently
 
     // MARK: Misc Columns
@@ -175,18 +198,32 @@ struct StatTable {
                 "Earliest event analyzed",
                 "Limiting lower bound",
                 "Limiting repo",
-				"\(kLimitedMarker) indicates value affected by limits"
+				"Recommendation",
+				limitMatters ? "indicates value affected by limits" : ""
         ])
     }
 
     private var analysisLimitsColumn: MiscColumn {
+		let earliestReliableDate = orgStat.earliestReliable.date.map { gitDatetimeFormatter.string(from: $0) }
+		let recommendation: String = {
+			switch (limitMatters, earliestReliableDate) {
+			case (false, _):
+				return "Rock on!"
+			case (true, let reliableDate?):
+				return "use command line argument --later-than=\(reliableDate)"
+			case (true, nil):
+				return "Loosen up your time window restriction. At least one of the repositories does not have event data."
+			}
+		}()
         return .init(
             header: "",
             rest: [
                 "\"\(orgStat.repoStats.map { k, _ in k }.joined(separator: ", "))\"",
 				orgStat.earliestEvent.map { gitDatetimeFormatter.string(from: $0) } ?? "N/A",
-				orgStat.earliestReliable.date.map { gitDatetimeFormatter.string(from: $0) } ?? "N/A",
-				String(describing: orgStat.earliestReliable.limitingRepo)
+				earliestReliableDate ?? "N/A",
+				String(describing: orgStat.earliestReliable.limitingRepo),
+				recommendation,
+				limitMatters ? "\(kLimitedMarker)" : ""
         ])
     }
 	
@@ -194,13 +231,21 @@ struct StatTable {
 		let statValue = String(describing: stat)
 		
 		// The limit matters if the earliest reliable date for the aggregate data is later
-		// than the earliest date.
+		// than the earliest date filter (i.e. all analyzed data originates from later in
+		// time than the lower limit filter).
 		return limitMatters && !stat.limitless ? "\(statValue)\(kLimitedMarker)" : statValue
 	}
 }
 
 extension StatTable {
-    var csvString: String {
+    public var csvString: String {
         return rows.map { $0.joined(separator: ",") }.joined(separator: "\n")
     }
+	
+	public typealias IndexColumn = [String]
+	/// A Column Stack gives you the columns paired with their indices.
+	/// One use for this is printing the columns out in a stack to the terminal.
+	public var columnStack: [(IndexColumn, [String])] {
+ 		return sections.flatMap { section in section.bodyColumns.map { (section.indexColumn.values, $0.values) } }
+	}
 }

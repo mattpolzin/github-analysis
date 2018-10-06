@@ -31,62 +31,90 @@ struct OrgStat {
     var avgPROpenLength: LimitedStat<TimeInterval> {
 		return prOpenLengths.map { $0.reduce(0) { $0 + $1/Double(prOpenLengths.count) } }
     }
-
+	
     var prsOpened: LimitedStat<Int> {
         return repoStats.values.map { $0.prsOpened }.reduce(0, +)
     }
 
-    var avgPrsOpened: LimitedStat<Double> {
-        return repoStats.values.map { $0.prsOpened }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+    var avgPrsOpenedPerRepo: LimitedStat<Double> {
+        return repoStats.values.map { $0.prsOpened }.reduce(0) { $0 + Double($1)/Double(repoStats.count) }
     }
+	
+	var avgPrsOpenedPerUser: LimitedStat<Double> {
+		return repoStats.values.map { $0.avgPrsOpened }.reduce(0) { $0 + Double($1)/Double(repoStats.count) }
+	}
 
     var prsClosed: LimitedStat<Int> {
         return repoStats.values.map { $0.prsClosed }.reduce(0, +)
     }
 
-    var avgPrsClosed: LimitedStat<Double> {
+    var avgPrsClosedPerRepo: LimitedStat<Double> {
         return repoStats.values.map { $0.prsClosed }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
+	
+	var avgPrsClosedPerUser: LimitedStat<Double> {
+		return repoStats.values.map { $0.avgPrsClosed }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	}
 
     var prComments: LimitedStat<Int> {
         return repoStats.values.map { $0.prComments }.reduce(0, +)
     }
 
-    var avgPrComments: LimitedStat<Double> {
+    var avgPrCommentsPerRepo: LimitedStat<Double> {
         return repoStats.values.map { $0.prComments }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
+	
+	var avgPrCommentsPerUser: LimitedStat<Double> {
+		return repoStats.values.map { $0.avgPrComments }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	}
 
     var linesAdded: LimitlessStat<Int> {
         return repoStats.values.map { $0.linesAdded }.reduce(0, +)
     }
 
-    var avgLinesAdded: LimitlessStat<Double> {
+    var avgLinesAddedPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.linesAdded }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
+	
+	var avgLinesAddedPerUser: LimitlessStat<Double> {
+		return repoStats.values.map { $0.avgLinesAdded }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	}
 
     var linesDeleted: LimitlessStat<Int> {
         return repoStats.values.map { $0.linesDeleted }.reduce(0, +)
     }
 
-    var avgLinesDeleted: LimitlessStat<Double> {
+    var avgLinesDeletedPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.linesDeleted }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
+	
+	var avgLinesDeletedPerUser: LimitlessStat<Double> {
+		return repoStats.values.map { $0.avgLinesDeleted }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	}
 
     var lines: LimitlessStat<Int> {
         return repoStats.values.map { $0.lines }.reduce(0, +)
     }
 
-    var avgLines: LimitlessStat<Double> {
+    var avgLinesPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.lines }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
+	
+	var avgLinesPerUser: LimitlessStat<Double> {
+		return repoStats.values.map { $0.avgLines }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	}
 
     var commits: LimitlessStat<Int> {
         return repoStats.values.map { $0.commits }.reduce(0, +)
     }
 
-    var avgCommits: LimitlessStat<Double> {
+    var avgCommitsPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.commits }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
+	
+	var avgCommitsPerUser: LimitlessStat<Double> {
+		return repoStats.values.map { $0.avgCommits }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	}
 
     var earliestEvent: Date? {
 		return repoStats.values.map { $0.earliestEvent }.reduce(nil, { a, b in
