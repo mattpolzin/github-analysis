@@ -86,18 +86,18 @@ struct StatTable {
     private var prOpenedColumn: UserColumn {
         return .init(
             header: "PRs opened",
-            total: String(orgStat.prsOpened),
-            average: String(orgStat.avgPrsOpened),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.pullRequestStat.opened) } ?? "" }
+			total: String(describing: orgStat.prsOpened),
+            average: String(describing: orgStat.avgPrsOpened),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.opened) } ?? "" }
         )
     }
 
     private var prClosedColumn: UserColumn {
         return .init(
             header: "PRs closed",
-            total: String(orgStat.prsClosed),
-            average: String(orgStat.avgPrsClosed),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.pullRequestStat.closed) } ?? "" }
+            total: String(describing: orgStat.prsClosed),
+            average: String(describing: orgStat.avgPrsClosed),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.closed) } ?? "" }
         )
     }
 
@@ -105,57 +105,58 @@ struct StatTable {
         return .init(
             header: "Average PR open length (days)",
             total: "\\",
-            average: String(orgStat.avgPROpenLength/(60 * 60 * 24)),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
+            average: String(describing: orgStat.avgPROpenLength/(60 * 60 * 24)),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
         )
     }
 
     private var prCommentsColumn: UserColumn {
         return .init(
             header: "PR comments",
-            total: String(orgStat.prComments),
-            average: String(orgStat.avgPrComments),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.pullRequestStat.comments) } ?? "" }
+            total: String(describing: orgStat.prComments),
+            average: String(describing: orgStat.avgPrComments),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.pullRequestStat.commentEvents) } ?? "" }
         )
     }
 
     private var linesOfCodeAddedColumn: UserColumn {
         return .init(
             header: "LOC Added",
-            total: String(orgStat.linesAdded),
-            average: String(orgStat.avgLinesAdded),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.codeStat.linesAdded) } ?? "" }
+            total: String(describing: orgStat.linesAdded),
+            average: String(describing: orgStat.avgLinesAdded),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.linesAdded) } ?? "" }
         )
     }
 
     private var linesOfCodeDeletedColumn: UserColumn {
         return .init(
             header: "LOC Deleted",
-            total: String(orgStat.linesDeleted),
-            average: String(orgStat.avgLinesDeleted),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.codeStat.linesDeleted) } ?? "" }
+            total: String(describing: orgStat.linesDeleted),
+            average: String(describing: orgStat.avgLinesDeleted),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.linesDeleted) } ?? "" }
         )
     }
 
     private var totalLinesOfCodeColumn: UserColumn {
         return .init(
             header: "Total LOC",
-            total: String(orgStat.lines),
-            average: String(orgStat.avgLines),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.codeStat.lines) } ?? "" }
+            total: String(describing: orgStat.lines),
+            average: String(describing: orgStat.avgLines),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.lines) } ?? "" }
         )
     }
 
     private var commitsColumn: UserColumn {
         return .init(
             header: "Commits",
-            total: String(orgStat.commits),
-            average: String(orgStat.avgCommits),
-            userValues: users.map { orgStat.userStats[$0].map { String($0.codeStat.commits) } ?? "" }
+            total: String(describing: orgStat.commits),
+            average: String(describing: orgStat.avgCommits),
+            userValues: users.map { orgStat.userStats[$0].map { String(describing: $0.codeStat.commits) } ?? "" }
         )
     }
 
     // MARK: Org Columns
+	// none currently
 
     // MARK: Misc Columns
     private var analysisLimitsIndexColumn: MiscColumn {
@@ -174,9 +175,9 @@ struct StatTable {
             header: "",
             rest: [
                 "\"\(orgStat.repoStats.map { k, _ in k }.joined(separator: ", "))\"",
-                gitDatetimeFormatter.string(from: orgStat.earliestEvent),
-                gitDatetimeFormatter.string(from: orgStat.earliestReliable.date),
-                String(orgStat.earliestReliable.limitingRepo)
+				orgStat.earliestEvent.map { gitDatetimeFormatter.string(from: $0) } ?? "N/A",
+				orgStat.earliestReliable.date.map { gitDatetimeFormatter.string(from: $0) } ?? "N/A",
+				String(describing: orgStat.earliestReliable.limitingRepo)
         ])
     }
 }

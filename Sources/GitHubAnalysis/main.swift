@@ -343,8 +343,12 @@ func startAnalysis() {
     print("")
     let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: repositoryOwner)
 
-    print("Limiting lower bound: \(gitDatetimeFormatter.string(from: orgStats.earliestReliable.date))")
-    print("Limiting repo: \(orgStats.earliestReliable.limitingRepo)")
+	if let earliestReliableDate = orgStats.earliestReliable.date {
+		print("Limiting lower bound: \(gitDatetimeFormatter.string(from: earliestReliableDate))")
+		print("Limiting repo: \(orgStats.earliestReliable.limitingRepo)")
+	} else {
+		print("No repositories analyzed any events in the date range you specifed.")
+	}
 
     print("")
 
@@ -361,7 +365,7 @@ func startAnalysis() {
     print("\(orgStats.prComments) comments left on PRs.")
     print("Comments left by each user:")
     for user in orgStats.userStats {
-        print("\(user.key): \(user.value.pullRequestStat.comments)")
+        print("\(user.key): \(user.value.pullRequestStat.commentEvents)")
     }
 
     print("")
