@@ -44,3 +44,12 @@ You can choose to only analyse events occuring after a certain date.
 You can specify a list of users to analyze and all other users that have contributed to the given repositories will be ignored.
 
 `github-analysis owner repo --users=user1,user2,user3`
+
+## Contributing
+Please fork the repository and make any additions that suit your needs. I welcome Pull Requests back into this repository; I'm never too busy to maintain a pet project but I might get too busy to make valuable additions myself.
+
+### Dev Env
+Just a note for anyone unfamiliar with the Swift Package Manager: 
+
+You can still do your development in Xcode, and I prefer to do so. Make sure that any Groups you create correlate to folders in the repository and the rest should be cake.
+run `swift package generate-xcodeproj` to get a project set up on your machine.
