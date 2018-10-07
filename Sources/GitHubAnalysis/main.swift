@@ -10,196 +10,97 @@ import Foundation
 import Dispatch
 import Alamofire
 
-// MARK: Usage
-
-struct GitHubAnalysisUsage: Usage {
-
-    let scriptName = "github-analysis"
-
-    let notes: UsageCategory<NoteRule>? = UsageCategory(name: "NOTES",
-                                                        note: nil,
-                                                        rules: [
-                                                            "IMPORTANT:\nThe GitHub events API that powers much of this script's analysis is limited to returning 300 events or 90 days into the past, whichever comes first. This limit is per-repository.\n\nThis script caches events for later use so that over time you can build up a bigger picture than the limitation would allow for. That being said, it is important to look at the \"Limiting lower bound\" offered up at the command line and in the CSV. This lower bound is the earliest date for which an event was found in the repository with the least history available. In other words, take the earliest event date for each repository and pick the latest of those dates.\n\nMy recommendation is to not perform analysis back farther in time than the \"Limiting lower bound\" (using -\(kEarliestDateArg))"
-        ])
-
-    let environment = UsageCategory(name: "ENVIRONMENT VARIABLES",
-                                    note: "These variables can also be specified as arguments by prepending their name with a dash: \"-VARNAME=VALUE\"",
-                               rules: [
-                                EnvironmentRule(name: kGithubAccessTokenVar,
-                                                usage: "Generate a personal access token for GitHub and then set this environment variable to allow the script to download data for repositories for which you have access.",
-                                                valueFormat: "1234567890abcdef")
-        ])
-
-    let flags = UsageCategory(name: "FLAGS",
-                         note: nil,
-                         rules: [
-                            FlagRule(name: kPrintJSONFlag,
-                                     usage: "Print the JSON response from GitHub before printing analysis results. This is mostly just useful for troubleshooting."),
-                            FlagRule(name: kOutputCSVFlag,
-                                     usage: "Generate a github_analysis.csv file in the current working directory"),
-                            FlagRule(name: kHelpFlag,
-                                     usage: "Print the usage.")
-        ])
-
-    let arguments = UsageCategory(name: "ARGUMENTS",
-                                  note: nil,
-                                  rules: [
-                                    ArgumentRule(name: kOrganizationArg,
-                                                 usage: "The organization or owner of the repository. This must match the slug that you find as a component of the web address for your repositories.",
-                                                 valueFormat: "username",
-                                                 positioning: .fixed),
-                                    ArgumentRule(name: kRepositoriesArg,
-                                                 usage: "Each repository listed will be analyzed.",
-                                                 valueFormat: "repo1,repo2,repo3...",
-                                                 positioning: .fixed),
-                                    ArgumentRule(name: kEarliestDateArg,
-                                                 usage: "Specify a datetime or a date that should be used as the cutoff before which GitHub data will not be analyzed. Note that LOC and commit stats are available by the week, so this filter will apply to the week start date for those stats.",
-                                                 valueFormat: "{YYYY-MM-DDTHH:MM:SSZ | YYYY-MM-DD}",
-                                                 positioning: .floating),
-									ArgumentRule(name: kLatestDateArg,
-												 usage: "Specify a datetime or a date that should be used as the cutoff after which GitHub data will not be analyzed. Note that LOC and commit stats are available by the week, so this filter will apply to the week start date for those stats.",
-												 valueFormat: "{YYYY-MM-DDTHH:MM:SSZ | YYYY-MM-DD}",
-												 positioning: .floating),
-                                    ArgumentRule(name: kUsersArg,
-                                                 usage: "Filter down to the given list of users for analysis. If not specified, all users will be analyzed.",
-                                                 valueFormat: "user1,user2,user3...",
-                                                 positioning: .floating)
-        ])
+// MARK: Read Input
+let inputs: GitHubAnalysisInputs
+switch GitHubAnalysisInputs.from(scriptInputs: Inputs()) {
+case .failure(.needHelp):
+	print(String(describing: GitHubAnalysisUsage()))
+	exit(0)
+case .failure(.missingRequirement(description: let description)):
+	print(description)
+	exit(1)
+case .success(let goodInputs):
+	inputs = goodInputs
 }
 
-let usage = GitHubAnalysisUsage()
-
-// MARK: Setup
-
-let inputs = Inputs()
-
-guard !inputs.isFlagSet(named: kHelpFlag) else {
-    print(String(describing: usage))
-    exit(0)
-}
-
-guard let personalAccessToken = inputs.variable(named: kGithubAccessTokenVar) else {
-    print("Missing GitHub Access Token. Please set \(kGithubAccessTokenVar) environment variable or specify on command line with -\(kGithubAccessTokenVar)={key}")
-    exit(1)
-}
-
-guard let repositoryOwner = inputs.variable(at: kOrganizationArgPos) else {
-    print("Missing required argument: \(kOrganizationArg). See --help for details.")
-    exit(1)
-}
-
-guard let repositories = inputs.array(at: kRepositoriesArgPos) else {
-    print("Missing required argument: \(kRepositoriesArg). See --help for details.")
-    exit(1)
-}
-
-let usersFilter = { username in
-    return inputs.array(named: kUsersArg)?.contains(username) ?? true
-}
+// MARK: Create Filters
+let filters = GitHubAnalysisFilters(from: inputs)
 
 // prepare cache file variables
 let currentDirectory = FileManager.default.currentDirectoryPath
 let defaultCacheFileLocation = URL(fileURLWithPath: currentDirectory).appendingPathComponent("github_analysis_cache").appendingPathExtension("json")
-let cacheFileLocation = inputs.variable(named: kCacheFileArg).map(URL.init(fileURLWithPath:))
 
-func cacheFile(atURL url: URL) -> URL? {
-    if !FileManager.default.fileExists(atPath: url.path) {
-        do {
-            try Data().write(to: url)
-        } catch {
-            return nil
-        }
-    }
+let cache = GitHubAnalysisCache(from: inputs, default: defaultCacheFileLocation)
 
-    guard FileManager.default.isReadableFile(atPath: url.path) && FileManager.default.isWritableFile(atPath: url.path) else {
-        return nil
-    }
-
-    return url
-}
-
-let cacheFileURL = cacheFileLocation.map { cacheFile(atURL: $0) } ?? cacheFile(atURL: defaultCacheFileLocation)
-
-if cacheFileURL == nil {
+if cache == nil {
     print("")
-    print("The cache file at \(cacheFileLocation ?? defaultCacheFileLocation) is either not readable or not writable. Analysis will continue without caching.")
+    print("The cache file at \(inputs.cacheFileLocation ?? defaultCacheFileLocation) is either not readable or not writable. Analysis will continue without caching.")
     print("")
 }
-
-// MARK: Date Formatters
-let gitDatetimeFormatter = DateFormatter()
-gitDatetimeFormatter.locale = Locale.init(identifier: "en_US_POSIX")
-gitDatetimeFormatter.timeZone = TimeZone.init(identifier: "UTC")!
-gitDatetimeFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss'Z'"
-
-let gitDateFormatter = DateFormatter()
-gitDateFormatter.locale = Locale.init(identifier: "en_US_POSIX")
-gitDateFormatter.dateFormat = "yyyy-MM-dd"
-
 
 // MARK: Events and Stats Globals
-var earliestDateFilter: Date?
 var allEvents = Set<GitHubEvent>()
 var allStats = Set<RepoContributor>()
 
-// MARK: Runloop
-
+// MARK: Runloop variables
 var analysisRequestsInFlight = 0
 let runLoop = RunLoop.current
 let distantFuture = Date.distantFuture
 
 // MARK: Functions
 func readCache() {
-    guard let url = cacheFileURL else { return }
-
-    let cacheFileHandle: FileHandle
-
-    do {
-        cacheFileHandle = try FileHandle.init(forReadingFrom: url)
-    } catch {
-        print("Unexpected error opening cache file for reading. Continuing.")
-        return
-    }
-
-    defer {
-        cacheFileHandle.closeFile()
-    }
-
-    let cacheData = cacheFileHandle.readDataToEndOfFile()
-    guard cacheData.count > 0 else {
-        print("No cache data found. Continuing.")
-        return
-    }
-
-    let decoder = JSONDecoder()
-    do {
-        let newEvents = try decoder.decode([GitHubEvent].self, from: cacheData)
-
-        let countBeforeCache = allEvents.count
-        allEvents = allEvents.union(newEvents)
-
-        print("\(allEvents.count - countBeforeCache) events loaded from cache.")
-    } catch {
-        print("")
-        print("error trying to read cache data")
-        print("")
-    }
+	guard let readResult = cache?.read() else { return }
+	
+	switch readResult {
+	case .failure(.fileError):
+		print("Unexpected error opening cache file for reading. Continuing.")
+	case .failure(.jsonError):
+		print("")
+		print("error trying to read cache data")
+		print("")
+	case .failure(.noData):
+		print("No cache data found. Continuing.")
+	case .success(let newEvents):
+		let countBeforeCache = allEvents.count
+		allEvents = allEvents.union(newEvents)
+		
+		print("\(allEvents.count - countBeforeCache) events loaded from cache.")
+	}
 }
 
 func writeCache() {
-    guard let url = cacheFileURL else { return }
-    let encoder = JSONEncoder()
+	// we don't cache the allStats set. Stats appear
+	// to always be fetched for all time from GitHub anyway
+	// so we don't gain anything by caching them.
+	guard let writeResult = cache?.write(events: allEvents) else { return }
+	
+	if case .failure = writeResult {
+		print("")
+		print("error trying to write cache data")
+		print("")
+	}
+}
 
-    do {
-        // we don't cache the allStats set. Stats appear
-        // to always be fetched for all time from GitHub anyway
-        // so we don't gain anything by caching them.
-        try encoder.encode(allEvents).write(to: url)
-    } catch {
-        print("")
-        print("error trying to write cache data")
-        print("")
-    }
+func requestDataFromGitHub() {
+	for repository in inputs.repositories {
+		// get new events
+		analysisRequestsInFlight += 1
+		Alamofire.request(
+			GitHubRequest.events(with: inputs.personalAccessToken,
+								 from: repository,
+								 ownedBy: inputs.repositoryOwner)
+				.urlRequest
+			).responseData(completionHandler: handle(events:))
+		
+		// get all stats for each repo
+		analysisRequestsInFlight += 1
+		Alamofire.request(
+			GitHubRequest.stats(with: inputs.personalAccessToken,
+								for: repository,
+								ownedBy: inputs.repositoryOwner)
+				.urlRequest
+			).responseData{ handle(stats: $0, withRetryOn: repository) }
+	}
 }
 
 func handle(events response: DataResponse<Data>) {
@@ -225,7 +126,7 @@ func handle(events response: DataResponse<Data>) {
         return
     }
 
-    if inputs.isFlagSet(named: kPrintJSONFlag) {
+    if inputs.printJSON {
         print(String(data: responseData, encoding: .utf8)!)
     }
 
@@ -241,7 +142,7 @@ func handle(events response: DataResponse<Data>) {
         }
 
         Alamofire.request(
-            GitHubRequest(accessToken: personalAccessToken,
+            GitHubRequest(accessToken: inputs.personalAccessToken,
                           url: next)
             .urlRequest
         ).responseData(completionHandler: handle(events:))
@@ -258,9 +159,9 @@ func handle(stats response: DataResponse<Data>, withRetryOn repository: String) 
         // The following retry is crashing the compiler and I am out of patience for fixing it at the moment.
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
             Alamofire.request(
-                GitHubRequest.stats(with: personalAccessToken,
+                GitHubRequest.stats(with: inputs.personalAccessToken,
                                     for: repository,
-                                    ownedBy: repositoryOwner)
+                                    ownedBy: inputs.repositoryOwner)
                     .urlRequest
                 ).responseData(completionHandler: { handle(stats: $0, repository: repository) })
         }
@@ -284,7 +185,7 @@ func handle(stats response: DataResponse<Data>, repository: String) {
         return
     }
 
-    if inputs.isFlagSet(named: kPrintJSONFlag) {
+    if inputs.printJSON {
         print(String(data: responseData, encoding: .utf8)!)
     }
 
@@ -306,20 +207,15 @@ func applyFilters() {
 	// not necessary for stats because stats are grabbed fresh from API for each repo.
 	// we need this step for events because the cache can contain events for repos not
 	// being analyzed this time.
-    allEvents = allEvents.filter { $0.data.repositoryNames.map(repositories.contains).contains(true) }
+    allEvents = allEvents.filter { $0.data.repositoryNames.map(filters.repositories).contains(true) }
 
-    print("\(allEvents.count) events across repositories: \(repositories.joined(separator: ", "))")
+    print("\(allEvents.count) events across repositories: \(inputs.repositories.joined(separator: ", "))")
     print("\(allStats.count) (user, repository) pairings.")
 
-    if let earliestDateString = inputs.variable(named: kEarliestDateArg) {
-        guard let earliestDate = gitDatetimeFormatter.date(from: earliestDateString) ?? gitDateFormatter.date(from: earliestDateString) else {
-            fatalError("Please specify your datetimes in the UTC timezone in the format: YYYY-MM-DDTHH:MM:SSZ -- OR -- use dates of the format: YYYY-MM-DD")
-        }
-		
-		earliestDateFilter = earliestDate
+    if let earliestDate = inputs.earliestDate {
 
         // weed out all events earlier than earliest date
-        allEvents = allEvents.filter { $0.createdAt >= earliestDate }
+		allEvents = allEvents.filter { filters.earliestDate($0.createdAt) }
 
         print("    \(allEvents.count) events were newer than \(earliestDate)")
 
@@ -328,17 +224,14 @@ func applyFilters() {
             RepoContributor(repository: contributor.repository,
                             contributor: GitHubContributor(author: contributor.contributor.author,
                                                            allTimeTotalCommits: contributor.contributor.allTimeTotalCommits,
-                                                           weeklyStats: contributor.contributor.weeklyStats.filter { $0.weekStart > earliestDate }))
+                                                           weeklyStats: contributor.contributor.weeklyStats.filter( { filters.earliestDate($0.weekStart) })))
         })
     }
 	
-	if let latestDateString = inputs.variable(named: kLatestDateArg) {
-		guard let latestDate = gitDatetimeFormatter.date(from: latestDateString) ?? gitDateFormatter.date(from: latestDateString) else {
-			fatalError("Please specify your datetimes in the UTC timezone in the format: YYYY-MM-DDTHH:MM:SSZ -- OR -- use dates of the format: YYYY-MM-DD")
-		}
+	if let latestDate = inputs.latestDate {
 		
 		// weed out all events later than latest date
-		allEvents = allEvents.filter { $0.createdAt <= latestDate }
+		allEvents = allEvents.filter { filters.latestDate($0.createdAt) }
 		
 		print("    \(allEvents.count) events were older than \(latestDate)")
 		
@@ -347,18 +240,18 @@ func applyFilters() {
 			RepoContributor(repository: contributor.repository,
 							contributor: GitHubContributor(author: contributor.contributor.author,
 														   allTimeTotalCommits: contributor.contributor.allTimeTotalCommits,
-														   weeklyStats: contributor.contributor.weeklyStats.filter { $0.weekStart <= latestDate }))
+														   weeklyStats: contributor.contributor.weeklyStats.filter { filters.latestDate($0.weekStart) }))
 		})
 	}
 
-    if let users = inputs.array(named: kUsersArg)?.joined(separator: ", ") {
+    if let users = inputs.users?.joined(separator: ", ") {
         // weed out all events for users not in the filter
-        allEvents = allEvents.filter { $0.data.userLogin.map(usersFilter) ?? true }
+        allEvents = allEvents.filter { $0.data.userLogin.map(filters.users) ?? true }
 
         print("    \(allEvents.count) events aftering filtering to: \(users)")
 
         // weed out all the contributions for users not in the filter
-        allStats = allStats.filter { usersFilter($0.contributor.author.login) }
+        allStats = allStats.filter { filters.users($0.contributor.author.login) }
 
         print("     \(allStats.count) (user, repository) pairings after filtering out users.")
     }
@@ -370,11 +263,11 @@ func startAnalysis() {
     timeSortedEvents.first.map { print("Earliest event: \($0.createdAt)") }
     timeSortedEvents.last.map { print("Latest event: \($0.createdAt)") }
     print("")
-    let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: repositoryOwner)
+    let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: inputs.repositoryOwner)
 
     print("")
 
-	let table = StatTable(orgStat: orgStats, earliestDateFilter: earliestDateFilter)
+	let table = StatTable(orgStat: orgStats, laterThan: inputs.earliestDate)
 	
 	func fillIfBlank(idx: Int, in array: [String]) -> String {
 		return array.count > idx ? array[idx] : " "
@@ -387,7 +280,7 @@ func startAnalysis() {
 		print("")
 	}
 
-    if inputs.isFlagSet(named: kOutputCSVFlag) {
+    if inputs.outputCSV {
         print("")
         print("Writing CSV file to github_analysis.csv...")
         let csvUrl = URL(fileURLWithPath: currentDirectory).appendingPathComponent("github_analysis").appendingPathExtension("csv")
@@ -404,25 +297,7 @@ func startAnalysis() {
 
 readCache()
 
-for repository in repositories {
-    // get new events
-    analysisRequestsInFlight += 1
-    Alamofire.request(
-        GitHubRequest.events(with: personalAccessToken,
-                             from: repository,
-                             ownedBy: repositoryOwner)
-        .urlRequest
-    ).responseData(completionHandler: handle(events:))
-
-    // get all stats for each repo
-    analysisRequestsInFlight += 1
-    Alamofire.request(
-        GitHubRequest.stats(with: personalAccessToken,
-                            for: repository,
-                            ownedBy: repositoryOwner)
-            .urlRequest
-    ).responseData{ handle(stats: $0, withRetryOn: repository) }
-}
+requestDataFromGitHub()
 
 // wait for requests to finish
 while analysisRequestsInFlight > 0 &&

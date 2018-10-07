@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Result
 
 extension CommandLineArguments {
     init() {
@@ -23,13 +24,22 @@ struct Inputs {
         let envVar = ProcessInfo.processInfo.environment[name]
         let cmdVar = commandLineArguments.parameterizedArguments[name]
 
-        return envVar ?? cmdVar?.value
+        return cmdVar?.value ?? envVar
     }
 
     /// Retrieve an array argument value with the given name.
     func array(named name: String) -> [String]? {
         return variable(named: name)?.split(separator: ",").map(String.init)
     }
+	
+	/// Retrieve a date argument value with the given name.
+	func date(named name: String) -> InputResult<Date> {
+		return InputResult(variable(named: name), failWith: .missing)
+			.flatMap { variable in
+				.init(GitHubAnalysisFormatter.datetime.date(from: variable) ?? GitHubAnalysisFormatter.date.date(from: variable),
+					  failWith: .malformed(variable))
+		}
+	}
 
     /// Retrieve an unnamed (i.e. fixed) argument value. These values are
     /// only distinguishable by the order in which they are specified.
@@ -53,4 +63,11 @@ struct Inputs {
 
         return envVarExists || cmdVarExists
     }
+	
+	enum InputError: Error {
+		case missing
+		case malformed(String)
+	}
+	
+	typealias InputResult<T> = Result<T, InputError>
 }

@@ -90,7 +90,7 @@ extension GitHubEvent: Decodable {
             data = NotTrackedPayload()
         }
 
-        guard let date = try gitDatetimeFormatter.date(from: values.decode(String.self, forKey: .createdAt)) else {
+        guard let date = try GitHubAnalysisFormatter.datetime.date(from: values.decode(String.self, forKey: .createdAt)) else {
             throw DecodingError.typeMismatch(Date.self, .init(codingPath: [CodingKeys.createdAt], debugDescription: "The Created At Date (created_at) was not in the expected Date format."))
         }
         createdAt = date
@@ -120,7 +120,7 @@ extension GitHubEvent: Encodable {
         }
 
         try container.encode(type, forKey: .type)
-        try container.encode(gitDatetimeFormatter.string(from: createdAt), forKey: .createdAt)
+        try container.encode(GitHubAnalysisFormatter.datetime.string(from: createdAt), forKey: .createdAt)
     }
 }
 

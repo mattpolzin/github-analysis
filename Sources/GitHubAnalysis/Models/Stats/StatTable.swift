@@ -19,7 +19,7 @@ struct StatTable {
     private let users: [Username] // important to always order the same way
 	private let limitMatters: Bool
 	
-	init(orgStat: OrgStat, earliestDateFilter: Date?) {
+	init(orgStat: OrgStat, laterThan earliestDate: Date?) {
         self.orgStat = orgStat
         self.users = Array(orgStat.userStats.keys)
 		
@@ -27,7 +27,7 @@ struct StatTable {
 		// than the earliest date filter (i.e. all analyzed data originates from later in
 		// time than the lower limit filter).
 		limitMatters = orgStat.earliestReliable.date.flatMap { earliestReliable in
-			earliestDateFilter
+			earliestDate
 				.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) }
 				.map { earliestFilter in
 				return earliestReliable > earliestFilter
@@ -204,7 +204,7 @@ struct StatTable {
     }
 
     private var analysisLimitsColumn: MiscColumn {
-		let earliestReliableDate = orgStat.earliestReliable.date.map { gitDatetimeFormatter.string(from: $0) }
+		let earliestReliableDate = orgStat.earliestReliable.date.map { GitHubAnalysisFormatter.datetime.string(from: $0) }
 		let recommendation: String = {
 			switch (limitMatters, earliestReliableDate) {
 			case (false, _):
@@ -219,7 +219,7 @@ struct StatTable {
             header: "",
             rest: [
                 "\"\(orgStat.repoStats.map { k, _ in k }.joined(separator: ", "))\"",
-				orgStat.earliestEvent.map { gitDatetimeFormatter.string(from: $0) } ?? "N/A",
+				orgStat.earliestEvent.map { GitHubAnalysisFormatter.datetime.string(from: $0) } ?? "N/A",
 				earliestReliableDate ?? "N/A",
 				String(describing: orgStat.earliestReliable.limitingRepo),
 				recommendation,

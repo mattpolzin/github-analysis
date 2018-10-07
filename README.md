@@ -11,6 +11,7 @@ You will also need a GitHub personal access token. Generate one at https://githu
 These dependencies will be downloaded and linked against automatically by the Swift Package Manager.
 
 1. Alamofire
+2. Result
 
 ## Building
 1. `swift package resolve`
