@@ -32,6 +32,10 @@ public struct BasicStat<B: Bound, Wrapped: CustomStringConvertible>: Stat {
 	public var description: String {
 		return String(describing: value)
 	}
+	
+	public init(value: Wrapped) {
+		self.value = value
+	}
 }
 
 public typealias LimitedStat<Type: CustomStringConvertible> = BasicStat<Limited, Type>
@@ -84,13 +88,13 @@ extension BasicStat: Arithmetic where Wrapped: Arithmetic {
 }
 
 extension BasicStat where Wrapped: RandomAccessCollection {
-	var count: Int {
+	public var count: Int {
 		return value.count
 	}
 }
 
 extension Array {
-	func reduce<B: Bound, T: CustomStringConvertible, U: CustomStringConvertible>(_ initialResult: BasicStat<B, T>,
+	public func reduce<B: Bound, T: CustomStringConvertible, U: CustomStringConvertible>(_ initialResult: BasicStat<B, T>,
 																				  _ nextPartialResult: (T, U) -> T) -> BasicStat<B, T> where Element == BasicStat<B, U> {
 		return reduce(initialResult) { res, next in zip(res, next, with: nextPartialResult) }
 	}

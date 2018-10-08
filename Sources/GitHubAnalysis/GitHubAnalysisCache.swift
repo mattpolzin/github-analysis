@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import GitHubAnalysisCore
 import Result
 
 struct GitHubAnalysisCache {

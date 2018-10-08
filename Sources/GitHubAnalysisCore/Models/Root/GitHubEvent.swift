@@ -8,13 +8,13 @@
 
 import Foundation
 
-enum EventType: String, CodingKey, Encodable {
+public enum EventType: String, CodingKey, Encodable {
     case pullRequest = "PullRequestEvent"
     case pullRequestComment = "PullRequestReviewCommentEvent"
     case pullRequestReview = "PullRequestReviewEvent"
     case notTracked
 
-    var payloadType: Payload.Type {
+    public var payloadType: Payload.Type {
         switch self {
         case .pullRequest:
             return PullRequestPayload.self
@@ -28,12 +28,12 @@ enum EventType: String, CodingKey, Encodable {
     }
 
     // following not needed with Swift 4.2, just conform to CaseIterable
-    static var allCases: [EventType] {
+    public static var allCases: [EventType] {
         return [.pullRequest, .pullRequestComment, .pullRequestReview, .notTracked]
     }
 }
 
-protocol Payload: Codable {
+public protocol Payload: Codable {
     /// Not all payloads are associated with users, but many of them are and it can be really convenient to access the
     /// user at the root rather than digging for it in different places.
     var userLogin: String? { get }
@@ -42,40 +42,40 @@ protocol Payload: Codable {
     var repositoryNames: [String] { get }
 }
 
-struct GitHubEvent {
-    let id: String
-    let type: EventType
-    let data: Payload
-    let createdAt: Date
+public struct GitHubEvent {
+    public let id: String
+    public let type: EventType
+    public let data: Payload
+    public let createdAt: Date
 
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case id
         case type
         case data = "payload"
         case createdAt = "created_at"
     }
 
-    func payload<T: Payload>(as: T.Type) -> T? {
+    public func payload<T: Payload>(as: T.Type) -> T? {
         return data as? T
     }
 
-    func timestampedPayload<T: Payload>(as: T.Type) -> (time: Date, data: T)? {
+    public func timestampedPayload<T: Payload>(as: T.Type) -> (time: Date, data: T)? {
         return (data as? T).map { (time: createdAt, data: $0) }
     }
 }
 
 extension GitHubEvent: Hashable {
-    static func == (lhs: GitHubEvent, rhs: GitHubEvent) -> Bool {
+    public static func == (lhs: GitHubEvent, rhs: GitHubEvent) -> Bool {
         return lhs.id == rhs.id
     }
 
-    var hashValue: Int {
+    public var hashValue: Int {
         return id.hashValue
     }
 }
 
 extension GitHubEvent: Decodable {
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
 
         id = try values.decode(String.self, forKey: .id)
@@ -100,7 +100,7 @@ extension GitHubEvent: Decodable {
 }
 
 extension GitHubEvent: Encodable {
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         try container.encode(id, forKey: .id)
@@ -125,7 +125,7 @@ extension GitHubEvent: Encodable {
 }
 
 extension EventType: Decodable {
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let value = try decoder.singleValueContainer().decode(String.self)
 
         guard let type = EventType(rawValue: value) else {

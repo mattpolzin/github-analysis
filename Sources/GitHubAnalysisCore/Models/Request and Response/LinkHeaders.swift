@@ -7,10 +7,10 @@
 
 import Foundation
 
-struct LinkHeaders {
-    let links: [Link]
+public struct LinkHeaders {
+    public let links: [Link]
 
-    init(headerValue: String) throws {
+    public init(headerValue: String) throws {
         // split on comma, then semicolon because links are separated by comma and link components are separated by semicolon
         let linkStrings = headerValue.split(separator: ",").map { $0.split(separator: ";") }
 
@@ -32,12 +32,12 @@ struct LinkHeaders {
         }
     }
 
-    struct Link {
-        let url: URL
-        let name: String
+    public struct Link {
+        public let url: URL
+        public let name: String
     }
 
-    enum Error: Swift.Error {
+    public enum Error: Swift.Error {
         case badURL
     }
 }

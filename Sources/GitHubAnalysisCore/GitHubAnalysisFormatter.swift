@@ -7,8 +7,8 @@
 
 import Foundation
 
-enum GitHubAnalysisFormatter {
-	static var datetime: DateFormatter {
+public enum GitHubAnalysisFormatter {
+	public static var datetime: DateFormatter {
 		let gitDatetimeFormatter = DateFormatter()
 		gitDatetimeFormatter.locale = Locale.init(identifier: "en_US_POSIX")
 		gitDatetimeFormatter.timeZone = TimeZone.init(identifier: "UTC")!
@@ -17,7 +17,7 @@ enum GitHubAnalysisFormatter {
 		return gitDatetimeFormatter
 	}
 	
-	static var date: DateFormatter {
+	public static var date: DateFormatter {
 		let gitDateFormatter = DateFormatter()
 		gitDateFormatter.locale = Locale.init(identifier: "en_US_POSIX")
 		gitDateFormatter.dateFormat = "yyyy-MM-dd"

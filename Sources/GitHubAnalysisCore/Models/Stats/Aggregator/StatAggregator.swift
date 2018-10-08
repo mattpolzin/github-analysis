@@ -7,7 +7,7 @@
 
 import Foundation
 
-func aggregateStats(from gitData: (events: [GitHubEvent], gitStats: [RepoContributor]), ownedBy orgName: String) -> OrgStat {
+public func aggregateStats(from gitData: (events: [GitHubEvent], gitStats: [RepoContributor]), ownedBy orgName: String) -> OrgStat {
     var userStatsByUser = [RepositoryUserKey: UserStat]()
 
     let (events, gitStats) = gitData

@@ -7,20 +7,20 @@
 
 import Foundation
 
-struct UserStat {
-    let pullRequestStat: PullRequestStat
-    let codeStat: CodeStat
-    let earliestEvent: Date? // needs to be optional rather than defaulting to distant future.
+public struct UserStat {
+    public let pullRequestStat: PullRequestStat
+    public let codeStat: CodeStat
+    public let earliestEvent: Date? // needs to be optional rather than defaulting to distant future.
 
-    struct PullRequestStat {
+    public struct PullRequestStat {
 		/// Limited because calculated using events API.
-        let opened: LimitedStat<Int>
+        public let opened: LimitedStat<Int>
 		
 		/// Limited because calculated using events API.
-        let closed: LimitedStat<Int>
+        public let closed: LimitedStat<Int>
 		
 		/// Limited because calculated using events API.
-        let openLengths: LimitedStat<[TimeInterval]>
+        public let openLengths: LimitedStat<[TimeInterval]>
 		
 		/// This stat means how many Pull Requests were owned (i.e. created) by the user. It is
 		/// not calculated by the "created" events, because that would be a LimitedStat.
@@ -32,28 +32,28 @@ struct UserStat {
 		
 		/// Count of all comments left on Pull Requests. This is calculated using the events API
 		/// so it is limited by how far back the API returns events.
-		let commentEvents: LimitedStat<Int>
+		public let commentEvents: LimitedStat<Int>
 
 		/// Limited because calculated using events API.
-        var avgOpenLength: LimitedStat<Double> {
+        public var avgOpenLength: LimitedStat<Double> {
 			return openLengths.map { openLengthsUnwrapped in
 				openLengthsUnwrapped.reduce(0, { $0 + $1/Double(openLengthsUnwrapped.count) })
 			}
         }
     }
 
-    struct CodeStat {
-        let linesAdded: LimitlessStat<Int>
-        let linesDeleted: LimitlessStat<Int>
-        let commits: LimitlessStat<Int>
+    public struct CodeStat {
+        public let linesAdded: LimitlessStat<Int>
+        public let linesDeleted: LimitlessStat<Int>
+        public let commits: LimitlessStat<Int>
 
-        var lines: LimitlessStat<Int> {
+        public var lines: LimitlessStat<Int> {
 			return zip(linesAdded, linesDeleted) { $0 + $1 }
         }
     }
 }
 
-extension UserStat {
+public extension UserStat {
     static func +(lhs: UserStat, rhs: UserStat) -> UserStat {
 		let minEvent = lhs.earliestEvent.flatMap { lhsu in rhs.earliestEvent.map { min(lhsu, $0) } }
 		let earliestEvent = minEvent ?? lhs.earliestEvent ?? rhs.earliestEvent
@@ -68,7 +68,7 @@ extension UserStat {
     }
 }
 
-extension UserStat {
+public extension UserStat {
     func with(_ prStat: PullRequestStat) -> UserStat {
         return UserStat(pullRequestStat: prStat, codeStat: codeStat, earliestEvent: earliestEvent)
     }
@@ -108,7 +108,7 @@ extension UserStat {
     }
 }
 
-extension UserStat.PullRequestStat {
+public extension UserStat.PullRequestStat {
     static func +(lhs: UserStat.PullRequestStat, rhs: UserStat.PullRequestStat) -> UserStat.PullRequestStat {
         return .init(opened: lhs.opened + rhs.opened,
                      closed: lhs.closed + rhs.closed,
@@ -139,7 +139,7 @@ extension UserStat.PullRequestStat {
     }
 }
 
-extension UserStat.CodeStat {
+public extension UserStat.CodeStat {
     static func +(lhs: UserStat.CodeStat, rhs: UserStat.CodeStat) -> UserStat.CodeStat {
         return .init(linesAdded: lhs.linesAdded + rhs.linesAdded,
                      linesDeleted: lhs.linesDeleted + rhs.linesDeleted,
@@ -167,7 +167,7 @@ extension UserStat.CodeStat {
     }
 }
 
-extension UserStat.PullRequestStat {
+public extension UserStat.PullRequestStat {
     static var opened: UserStat.PullRequestStat {
         return .init(opened: 1, closed: 0, openLengths: [], commentEvents: 0)
     }

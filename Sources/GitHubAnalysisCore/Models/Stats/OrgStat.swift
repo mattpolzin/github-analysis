@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct OrgStat {
-    let orgName: String
-    let repoStats: [RepositoryName: RepoStat]
+public struct OrgStat {
+    public let orgName: String
+    public let repoStats: [RepositoryName: RepoStat]
 
-    var userStats: [Username: UserStat] {
+    public var userStats: [Username: UserStat] {
         var users = [Username: UserStat]()
 
         for repo in repoStats.values {
@@ -23,100 +23,100 @@ struct OrgStat {
         return users
     }
 
-    var prOpenLengths: LimitedStat<[Double]> {
+    public var prOpenLengths: LimitedStat<[Double]> {
         return repoStats.values.map { $0.prOpenLengths }.reduce([], +)
     }
 
     /// Average is given in seconds
-    var avgPROpenLength: LimitedStat<TimeInterval> {
+    public var avgPROpenLength: LimitedStat<TimeInterval> {
 		return prOpenLengths.map { $0.reduce(0) { $0 + $1/Double(prOpenLengths.count) } }
     }
 	
-    var prsOpened: LimitedStat<Int> {
+    public var prsOpened: LimitedStat<Int> {
         return repoStats.values.map { $0.prsOpened }.reduce(0, +)
     }
 
-    var avgPrsOpenedPerRepo: LimitedStat<Double> {
+    public var avgPrsOpenedPerRepo: LimitedStat<Double> {
         return repoStats.values.map { $0.prsOpened }.reduce(0) { $0 + Double($1)/Double(repoStats.count) }
     }
 	
-	var avgPrsOpenedPerUser: LimitedStat<Double> {
+	public var avgPrsOpenedPerUser: LimitedStat<Double> {
 		return repoStats.values.map { $0.avgPrsOpened }.reduce(0) { $0 + Double($1)/Double(repoStats.count) }
 	}
 
-    var prsClosed: LimitedStat<Int> {
+    public var prsClosed: LimitedStat<Int> {
         return repoStats.values.map { $0.prsClosed }.reduce(0, +)
     }
 
-    var avgPrsClosedPerRepo: LimitedStat<Double> {
+    public var avgPrsClosedPerRepo: LimitedStat<Double> {
         return repoStats.values.map { $0.prsClosed }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
 	
-	var avgPrsClosedPerUser: LimitedStat<Double> {
+	public var avgPrsClosedPerUser: LimitedStat<Double> {
 		return repoStats.values.map { $0.avgPrsClosed }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
 	}
 
-    var prComments: LimitedStat<Int> {
+    public var prComments: LimitedStat<Int> {
         return repoStats.values.map { $0.prComments }.reduce(0, +)
     }
 
-    var avgPrCommentsPerRepo: LimitedStat<Double> {
+    public var avgPrCommentsPerRepo: LimitedStat<Double> {
         return repoStats.values.map { $0.prComments }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
 	
-	var avgPrCommentsPerUser: LimitedStat<Double> {
+	public var avgPrCommentsPerUser: LimitedStat<Double> {
 		return repoStats.values.map { $0.avgPrComments }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
 	}
 
-    var linesAdded: LimitlessStat<Int> {
+    public var linesAdded: LimitlessStat<Int> {
         return repoStats.values.map { $0.linesAdded }.reduce(0, +)
     }
 
-    var avgLinesAddedPerRepo: LimitlessStat<Double> {
+    public var avgLinesAddedPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.linesAdded }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
 	
-	var avgLinesAddedPerUser: LimitlessStat<Double> {
+	public var avgLinesAddedPerUser: LimitlessStat<Double> {
 		return repoStats.values.map { $0.avgLinesAdded }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
 	}
 
-    var linesDeleted: LimitlessStat<Int> {
+    public var linesDeleted: LimitlessStat<Int> {
         return repoStats.values.map { $0.linesDeleted }.reduce(0, +)
     }
 
-    var avgLinesDeletedPerRepo: LimitlessStat<Double> {
+    public var avgLinesDeletedPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.linesDeleted }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
 	
-	var avgLinesDeletedPerUser: LimitlessStat<Double> {
+	public var avgLinesDeletedPerUser: LimitlessStat<Double> {
 		return repoStats.values.map { $0.avgLinesDeleted }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
 	}
 
-    var lines: LimitlessStat<Int> {
+    public var lines: LimitlessStat<Int> {
         return repoStats.values.map { $0.lines }.reduce(0, +)
     }
 
-    var avgLinesPerRepo: LimitlessStat<Double> {
+    public var avgLinesPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.lines }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
 	
-	var avgLinesPerUser: LimitlessStat<Double> {
+	public var avgLinesPerUser: LimitlessStat<Double> {
 		return repoStats.values.map { $0.avgLines }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
 	}
 
-    var commits: LimitlessStat<Int> {
+    public var commits: LimitlessStat<Int> {
         return repoStats.values.map { $0.commits }.reduce(0, +)
     }
 
-    var avgCommitsPerRepo: LimitlessStat<Double> {
+    public var avgCommitsPerRepo: LimitlessStat<Double> {
         return repoStats.values.map { $0.commits }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
     }
 	
-	var avgCommitsPerUser: LimitlessStat<Double> {
+	public var avgCommitsPerUser: LimitlessStat<Double> {
 		return repoStats.values.map { $0.avgCommits }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
 	}
 
-    var earliestEvent: Date? {
+    public var earliestEvent: Date? {
 		return repoStats.values.map { $0.earliestEvent }.reduce(nil, { a, b in
 			let minEvent = a.flatMap { au in b.map { min(au, $0) } }
 			let earliestEvent = minEvent ?? a ?? b
@@ -124,7 +124,7 @@ struct OrgStat {
 		})
     }
 
-    var earliestReliable: (date: Date?, limitingRepo: String) {
+    public var earliestReliable: (date: Date?, limitingRepo: String) {
 		// What we actually need to accomplish here is:
 		// If no repos have an earliest date, nil is the earliest reliable date (aka no info on reliablity)
 		// If multiple repos have earliest dates, pick the latest of those dates.

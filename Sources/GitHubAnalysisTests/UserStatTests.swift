@@ -1,0 +1,17 @@
+//
+//  UserStatTests.swift
+//  GitHubAnalysisTests
+//
+//  Created by Mathew Polzin on 10/7/18.
+//
+
+import XCTest
+import SwiftCheck
+import GitHubAnalysisCore
+
+class UserStatTests: XCTestCase {
+
+	
+}
+
+

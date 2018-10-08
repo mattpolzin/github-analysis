@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import Dispatch
+import GitHubAnalysisCore
 import Alamofire
 
 // MARK: Read Input
@@ -301,7 +301,7 @@ requestDataFromGitHub()
 
 // wait for requests to finish
 while analysisRequestsInFlight > 0 &&
-    runLoop.run(mode: .defaultRunLoopMode, before: distantFuture) {}
+    runLoop.run(mode: RunLoop.Mode.default, before: distantFuture) {}
 
 writeCache()
 

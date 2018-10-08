@@ -14,12 +14,12 @@ private protocol Column {
 private let kLimitedMarker = "†"
 
 /// Organize available aggregated stats into a table
-struct StatTable {
+public struct StatTable {
     private let orgStat: OrgStat
     private let users: [Username] // important to always order the same way
 	private let limitMatters: Bool
 	
-	init(orgStat: OrgStat, laterThan earliestDate: Date?) {
+	public init(orgStat: OrgStat, laterThan earliestDate: Date?) {
         self.orgStat = orgStat
         self.users = Array(orgStat.userStats.keys)
 		
@@ -237,15 +237,15 @@ struct StatTable {
 	}
 }
 
-extension StatTable {
-    public var csvString: String {
+public extension StatTable {
+    var csvString: String {
         return rows.map { $0.joined(separator: ",") }.joined(separator: "\n")
     }
 	
-	public typealias IndexColumn = [String]
+	typealias IndexColumn = [String]
 	/// A Column Stack gives you the columns paired with their indices.
 	/// One use for this is printing the columns out in a stack to the terminal.
-	public var columnStack: [(IndexColumn, [String])] {
+	var columnStack: [(IndexColumn, [String])] {
  		return sections.flatMap { section in section.bodyColumns.map { (section.indexColumn.values, $0.values) } }
 	}
 }

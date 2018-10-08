@@ -7,46 +7,57 @@
 
 import Foundation
 
-struct GitHubContributor: Codable, Equatable {
-    let author: GitHubUser
-    let allTimeTotalCommits: Int
-    let weeklyStats: [Stats]
+public struct GitHubContributor: Codable, Equatable {
+    public let author: GitHubUser
+    public let allTimeTotalCommits: Int
+    public let weeklyStats: [Stats]
 
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case author
         case allTimeTotalCommits = "total"
         case weeklyStats = "weeks"
     }
 
-    struct Stats: Equatable {
-        let weekStart: Date
-        let locAdded: Int
-        let locDeleted: Int
-        let commits: Int
+    public struct Stats: Equatable {
+        public let weekStart: Date
+        public let locAdded: Int
+        public let locDeleted: Int
+        public let commits: Int
     }
+	
+	public init(author: GitHubUser, allTimeTotalCommits: Int, weeklyStats: [Stats]) {
+		self.author = author
+		self.allTimeTotalCommits = allTimeTotalCommits
+		self.weeklyStats = weeklyStats
+	}
 }
 
 extension GitHubContributor: Hashable {
-    var hashValue: Int {
+    public var hashValue: Int {
         return author.id.hashValue
     }
 }
 
 /// This is just a GitHubContributor that knows which Repo it is from
-struct RepoContributor: Equatable, Hashable {
-    let repository: String
-    let contributor: GitHubContributor
+public struct RepoContributor: Equatable, Hashable {
+    public let repository: String
+    public let contributor: GitHubContributor
+	
+	public init(repository: String, contributor: GitHubContributor) {
+		self.repository = repository
+		self.contributor = contributor
+	}
 }
 
 extension GitHubContributor.Stats: Codable {
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case weekStart = "w"
         case locAdded = "a"
         case locDeleted = "d"
         case commits = "c"
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
 
         weekStart = try Date.init(timeIntervalSince1970: values.decode(TimeInterval.self, forKey: .weekStart))
@@ -56,7 +67,7 @@ extension GitHubContributor.Stats: Codable {
         commits = try values.decode(Int.self, forKey: .commits)
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         try container.encode(String(weekStart.timeIntervalSince1970), forKey: .weekStart)

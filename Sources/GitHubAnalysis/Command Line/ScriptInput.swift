@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import GitHubAnalysisCore
 import Result
 
 extension CommandLineArguments {
