@@ -26,11 +26,11 @@ public struct StatTable {
 		// The limit matters if the earliest reliable date for the aggregate data is later
 		// than the earliest date filter (i.e. all analyzed data originates from later in
 		// time than the lower limit filter).
-		limitMatters = orgStat.earliestReliable.date.flatMap { earliestReliable in
+		limitMatters = orgStat.earliestReliable.flatMap { earliestReliable in
 			earliestDate
 				.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) }
 				.map { earliestFilter in
-				return earliestReliable > earliestFilter
+				return earliestReliable.date > earliestFilter
 			}
 		} ?? true
     }
@@ -199,12 +199,13 @@ public struct StatTable {
                 "Limiting lower bound",
                 "Limiting repo",
 				"Recommendation",
-				limitMatters ? "indicates value effected by limits" : ""
+				limitMatters ? "Value effected by limits" : "",
+				orgStat.unreliableRepositories.count > 0 ? "Repositories with no events in time window analyzed": ""
         ])
     }
 
     private var analysisLimitsColumn: MiscColumn {
-		let earliestReliableDate = orgStat.earliestReliable.date.map { GitHubAnalysisFormatter.datetime.string(from: $0) }
+		let earliestReliableDate = orgStat.earliestReliable.map { GitHubAnalysisFormatter.datetime.string(from: $0.date) }
 		let recommendation: String = {
 			switch (limitMatters, earliestReliableDate) {
 			case (false, _):
@@ -212,7 +213,7 @@ public struct StatTable {
 			case (true, let reliableDate?):
 				return "use command line argument --later-than=\(reliableDate)"
 			case (true, nil):
-				return "Loosen up your time window restriction. At least one of the repositories does not have event data."
+				return "Loosen up your time window restriction. None of the repositories have event data."
 			}
 		}()
         return .init(
@@ -221,9 +222,10 @@ public struct StatTable {
                 "\"\(orgStat.repoStats.map { k, _ in k }.joined(separator: ", "))\"",
 				orgStat.earliestEvent.map { GitHubAnalysisFormatter.datetime.string(from: $0) } ?? "N/A",
 				earliestReliableDate ?? "N/A",
-				String(describing: orgStat.earliestReliable.limitingRepo),
+				orgStat.earliestReliable?.name ?? "N/A",
 				recommendation,
-				limitMatters ? "\(kLimitedMarker)" : ""
+				limitMatters ? "\(kLimitedMarker)" : "",
+				orgStat.unreliableRepositories.count > 0 ? "\"\(orgStat.unreliableRepositories.joined(separator: ", "))\"": ""
         ])
     }
 	
@@ -243,6 +245,7 @@ public extension StatTable {
     }
 	
 	typealias IndexColumn = [String]
+	
 	/// A Column Stack gives you the columns paired with their indices.
 	/// One use for this is printing the columns out in a stack to the terminal.
 	var columnStack: [(IndexColumn, [String])] {

@@ -124,18 +124,35 @@ public struct OrgStat {
 		})
     }
 
-    public var earliestReliable: (date: Date?, limitingRepo: String) {
-		// What we actually need to accomplish here is:
-		// If no repos have an earliest date, nil is the earliest reliable date (aka no info on reliablity)
-		// If multiple repos have earliest dates, pick the latest of those dates.
-		// The code just gets complicated because the dates can be nil.
-        return repoStats.reduce((date: nil, limitingRepo: "null"),
-                                { earliestYet, next in
-									return earliestYet.date.flatMap { earliestDateYet in
-										next.value.earliestEvent.map { nextDate in
-											return nextDate > earliestDateYet ? (date: nextDate, limitingRepo: next.key) : earliestYet
-										}
-									} ?? (date: next.value.earliestEvent, limitingRepo: next.key)
-		})
+	/// The earliest reliable date/repository is the date after which
+	/// all repositories have event data available and the repository
+	/// for which that date is the earliest any event data is available.
+	/// For the purposes of this calculation, repositories that do not
+	/// have any event data available in the time window specified
+	/// are not considered. See `unreliableRepositories` for a list
+	/// of empty repositories.
+    public var earliestReliable: (date: Date, name: String)? {
+		typealias Repo = (date: Date, name: String)
+		
+		let repos: [Repo] = repoStats.map { repo in
+				return repo.value.earliestEvent.map { (earliest: $0, name: repo.key) }
+			}.compactMap { $0 }
+		
+		let reducer = { (earliestYet: Repo?, next: Repo) in
+			return earliestYet.map { current in
+				return next.date > current.date ? next : current
+			} ?? next
+		}
+		
+        return repos.reduce(nil, reducer)
     }
+	
+	/// A list of repositories that might not be reliable. These repositories
+	/// don't have any events to analyze in the given time window. It is
+	/// possible there simply were no events in the window, but it is also
+	/// possible the window is farther back that the GitHub API will provide
+	/// events and there are no relevant events locally cached either.
+	public var unreliableRepositories: [RepositoryName] {
+		return repoStats.compactMap { $0.value.userStats.compactMap { $0.value.earliestEvent }.isEmpty ? $0.key : nil }
+	}
 }
