@@ -11,7 +11,7 @@ import SwiftCheck
 
 class OrgStatTests: XCTestCase {
 	func test_earliestReliableIsLatestEarliestDate() {
-		property("there are no repositories with later earliestEvents than the earliest reliable repository") <- forAll { (orgStat: OrgStat) in
+		property("There are no repositories with later earliestEvents than the earliest reliable repository") <- forAll { (orgStat: OrgStat) in
 			let repositories = orgStat
 				.repoStats
 				.map { ($0, $1.earliestEvent) }
@@ -24,6 +24,18 @@ class OrgStatTests: XCTestCase {
 			let repoNamesAgree = orgStat.earliestReliable?.name == repositories.first?.0
 			
 			return datesAgree && repoNamesAgree
+		}
+	}
+	
+	func test_emptyReposAreUnreliableRepositories() {
+		// empty in that they have analyzed no events
+		
+		property("Repositories with no events are 'unreliable'") <- forAll { (orgStat: OrgStat) in
+			let emptyRepositories = orgStat.repoStats.filter { $0.value.earliestEvent == nil }
+			
+			return emptyRepositories.reduce(true) { foundSoFar, next in
+				return foundSoFar && orgStat.unreliableRepositories.contains(next.key)
+			}
 		}
 	}
 }
