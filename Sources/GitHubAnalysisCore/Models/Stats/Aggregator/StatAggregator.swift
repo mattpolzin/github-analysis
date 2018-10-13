@@ -58,7 +58,7 @@ public func aggregateStats(from gitData: (events: [GitHubEvent], gitStats: [Repo
     for stat in gitStats {
         let userKey = RepositoryUserKey(repo: stat.repository, username: stat.contributor.author.login)
         for week in stat.contributor.weeklyStats {
-            userStatsByUser[userKey, default: UserStat()] += UserStat.CodeStat(linesAdded: week.locAdded,
+            userStatsByUser[userKey, default: UserStat()] += UserStat.Code(linesAdded: week.locAdded,
                                                                                linesDeleted: week.locDeleted,
                                                                                commits: week.commits)
         }

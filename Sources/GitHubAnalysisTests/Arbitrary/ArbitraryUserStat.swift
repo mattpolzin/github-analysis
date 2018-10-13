@@ -9,10 +9,10 @@ import Foundation
 import SwiftCheck
 import GitHubAnalysisCore
 
-extension UserStat.PullRequestStat: Arbitrary {
-	public static var arbitrary: Gen<UserStat.PullRequestStat> {
+extension UserStat.PullRequest: Arbitrary {
+	public static var arbitrary: Gen<UserStat.PullRequest> {
 		return Gen.compose { c in
-			return UserStat.PullRequestStat(opened: c.generate(),
+			return UserStat.PullRequest(opened: c.generate(),
 									 closed: c.generate(),
 									 openLengths: c.generate(),
 									 commentEvents: c.generate())
@@ -20,10 +20,10 @@ extension UserStat.PullRequestStat: Arbitrary {
 	}
 }
 
-extension UserStat.CodeStat: Arbitrary {
-	public static var arbitrary: Gen<UserStat.CodeStat> {
+extension UserStat.Code: Arbitrary {
+	public static var arbitrary: Gen<UserStat.Code> {
 		return Gen.compose { c in
-			return UserStat.CodeStat(linesAdded: c.generate(),
+			return UserStat.Code(linesAdded: c.generate(),
 									 linesDeleted: c.generate(),
 									 commits: c.generate())
 		}
@@ -35,8 +35,8 @@ extension UserStat: Arbitrary {
 		return Gen.compose { c in
 			let earliestDate: Date? = c.generate()
 			let userStat = UserStat()
-				.with(c.generate() as CodeStat)
-				.with(c.generate() as PullRequestStat)
+				.with(c.generate() as Code)
+				.with(c.generate() as PullRequest)
 			return earliestDate.map { userStat.updating(earliestEvent: $0) } ?? userStat
 		}
 	}
@@ -44,7 +44,7 @@ extension UserStat: Arbitrary {
 	public static var arbitraryWithNoEvents: Gen<UserStat> {
 		return Gen.compose { c in
 			// user with no events will not have PullRequestStats or an earliestDate
-			return UserStat().with(c.generate() as CodeStat)
+			return UserStat().with(c.generate() as Code)
 		}
 	}
 }

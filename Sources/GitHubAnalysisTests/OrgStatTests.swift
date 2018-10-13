@@ -28,13 +28,25 @@ class OrgStatTests: XCTestCase {
 	}
 	
 	func test_emptyReposAreUnreliableRepositories() {
-		// empty in that they have analyzed no events
+		// empty in that they have no analyzed events
 		
 		property("Repositories with no events are 'unreliable'") <- forAll { (orgStat: OrgStat) in
 			let emptyRepositories = orgStat.repoStats.filter { $0.value.earliestEvent == nil }
 			
 			return emptyRepositories.reduce(true) { foundSoFar, next in
 				return foundSoFar && orgStat.unreliableRepositories.contains(next.key)
+			}
+		}
+	}
+	
+	func test_nonEmptyReposAreNotUnreliable() {
+		// non-empty in that they have some analyzed events
+		
+		property("Repositories with events are not 'unreliable'") <- forAll { (orgStat: OrgStat) in
+			let nonEmptyRepositories = orgStat.repoStats.filter { $0.value.earliestEvent != nil }
+			
+			return nonEmptyRepositories.reduce(true) { notFoundSoFar, next in
+				notFoundSoFar && !orgStat.unreliableRepositories.contains(next.key)
 			}
 		}
 	}

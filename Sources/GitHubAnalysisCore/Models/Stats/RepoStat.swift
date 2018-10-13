@@ -11,70 +11,8 @@ public struct RepoStat {
     public let repoName: String
     public let userStats: [Username: UserStat]
 	
-    public var prOpenLengths: LimitedStat<[TimeInterval]> {
-        return userStats.values.map { $0.pullRequestStat.openLengths }.reduce([], +)
-    }
-
-    /// Average is given in seconds
-    public var avgPROpenLength: LimitedStat<TimeInterval> {
-		return prOpenLengths.map { $0.reduce(0) { $0 + $1/Double(prOpenLengths.count) } }
-    }
-
-    public var prsOpened: LimitedStat<Int> {
-        return userStats.values.map { $0.pullRequestStat.opened }.reduce(0, +)
-    }
-
-    public var avgPrsOpened: LimitedStat<Double> {
-        return userStats.values.map { $0.pullRequestStat.opened }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
-
-    public var prsClosed: LimitedStat<Int> {
-        return userStats.values.map { $0.pullRequestStat.closed }.reduce(0, +)
-    }
-
-    public var avgPrsClosed: LimitedStat<Double> {
-        return userStats.values.map { $0.pullRequestStat.closed }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
-
-    public var prComments: LimitedStat<Int> {
-        return userStats.values.map { $0.pullRequestStat.commentEvents }.reduce(0, +)
-    }
-
-    public var avgPrComments: LimitedStat<Double> {
-        return userStats.values.map { $0.pullRequestStat.commentEvents }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
-
-    public var linesAdded: LimitlessStat<Int> {
-        return userStats.values.map { $0.codeStat.linesAdded }.reduce(0, +)
-    }
-
-    public var avgLinesAdded: LimitlessStat<Double> {
-        return userStats.values.map { $0.codeStat.linesAdded }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
-
-    public var linesDeleted: LimitlessStat<Int> {
-        return userStats.values.map { $0.codeStat.linesDeleted }.reduce(0, +)
-    }
-
-    public var avgLinesDeleted: LimitlessStat<Double> {
-        return userStats.values.map { $0.codeStat.linesDeleted }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
-
-    public var lines: LimitlessStat<Int> {
-        return userStats.values.map { $0.codeStat.lines }.reduce(0, +)
-    }
-
-    public var avgLines: LimitlessStat<Double> {
-		return userStats.values.map { $0.codeStat.lines }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
-
-    public var commits: LimitlessStat<Int> {
-        return userStats.values.map { $0.codeStat.commits }.reduce(0, +)
-    }
-
-    public var avgCommits: LimitlessStat<Double> {
-		return userStats.values.map { $0.codeStat.commits }.reduce(0) { $0 + Double($1)/Double(userStats.count) }
-    }
+	public let pullRequestStats: PullRequest
+	public let codeStats: Code
 
     public var earliestEvent: Date? {
 		return userStats.values.map { $0.earliestEvent }.reduce(nil, { a, b in
@@ -83,4 +21,65 @@ public struct RepoStat {
 			return earliestEvent
 		})
     }
+	
+	public init(repoName: String, userStats: [Username: UserStat]) {
+		self.repoName = repoName
+		self.userStats = userStats
+		pullRequestStats = .init(prStats: userStats.values.map { $0.pullRequestStat })
+		codeStats = .init(codeStats: userStats.values.map { $0.codeStat })
+	}
+	
+	public typealias PullRequest = AggregatePullRequestStat
+	public typealias Code = AggregateCodeStat
+}
+
+public struct AggregatePullRequestStat {
+	/// Average is given in seconds
+	public let openLengths: AggregateLimitedStat<[TimeInterval], Double>
+	
+	public let opened: AggregateLimitedStat<Int, Double>
+	
+	public let closed: AggregateLimitedStat<Int, Double>
+	
+	public let comments: AggregateLimitedStat<Int, Double>
+}
+
+public struct AggregateCodeStat {
+	public let linesAdded: AggregateLimitlessStat<Int, Double>
+	
+	public let linesDeleted: AggregateLimitlessStat<Int, Double>
+	
+	public let lines: AggregateLimitlessStat<Int, Double>
+	
+	public let commits: AggregateLimitlessStat<Int, Double>
+}
+
+extension RepoStat.PullRequest {
+	init(prStats: [UserStat.PullRequest]) {
+		let openLengthsArr = prStats.map { $0.openLengths }.reduce([], +)
+		
+		// open lengths is a bit different than other metrics because
+		// total open length is not very useful, so the total
+		// is actually an array containing all open legnths.
+		openLengths = (total: openLengthsArr,
+					   average: prStats.map { $0.avgOpenLength }.reduce(0) { $0 + Double($1)/Double(prStats.count) })
+		
+		opened = aggregateSumAndAvg(prStats.map { $0.opened })
+		
+		closed = aggregateSumAndAvg(prStats.map { $0.closed })
+		
+		comments = aggregateSumAndAvg(prStats.map { $0.commentEvents })
+	}
+}
+
+extension RepoStat.Code {
+	init(codeStats: [UserStat.Code]) {
+		linesAdded = aggregateSumAndAvg(codeStats.map { $0.linesAdded })
+		
+		linesDeleted = aggregateSumAndAvg(codeStats.map { $0.linesDeleted })
+		
+		lines = aggregateSumAndAvg(codeStats.map { $0.lines })
+		
+		commits = aggregateSumAndAvg(codeStats.map { $0.commits })
+	}
 }

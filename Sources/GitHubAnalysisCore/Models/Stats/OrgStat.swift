@@ -11,109 +11,27 @@ public struct OrgStat {
     public let orgName: String
     public let repoStats: [RepositoryName: RepoStat]
 
-    public var userStats: [Username: UserStat] {
-        var users = [Username: UserStat]()
-
-        for repo in repoStats.values {
-            for user in repo.userStats {
-                users[user.key, default: UserStat()] += user.value
-            }
-        }
-
-        return users
-    }
-
-    public var prOpenLengths: LimitedStat<[Double]> {
-        return repoStats.values.map { $0.prOpenLengths }.reduce([], +)
-    }
-
-    /// Average is given in seconds
-    public var avgPROpenLength: LimitedStat<TimeInterval> {
-		return prOpenLengths.map { $0.reduce(0) { $0 + $1/Double(prOpenLengths.count) } }
-    }
+    public let userStats: [Username: UserStat]
 	
-    public var prsOpened: LimitedStat<Int> {
-        return repoStats.values.map { $0.prsOpened }.reduce(0, +)
-    }
-
-    public var avgPrsOpenedPerRepo: LimitedStat<Double> {
-        return repoStats.values.map { $0.prsOpened }.reduce(0) { $0 + Double($1)/Double(repoStats.count) }
-    }
+	public let pullRequestStats: PullRequest
+	public let codeStats: Code
 	
-	public var avgPrsOpenedPerUser: LimitedStat<Double> {
-		return repoStats.values.map { $0.avgPrsOpened }.reduce(0) { $0 + Double($1)/Double(repoStats.count) }
-	}
-
-    public var prsClosed: LimitedStat<Int> {
-        return repoStats.values.map { $0.prsClosed }.reduce(0, +)
-    }
-
-    public var avgPrsClosedPerRepo: LimitedStat<Double> {
-        return repoStats.values.map { $0.prsClosed }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-    }
-	
-	public var avgPrsClosedPerUser: LimitedStat<Double> {
-		return repoStats.values.map { $0.avgPrsClosed }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-	}
-
-    public var prComments: LimitedStat<Int> {
-        return repoStats.values.map { $0.prComments }.reduce(0, +)
-    }
-
-    public var avgPrCommentsPerRepo: LimitedStat<Double> {
-        return repoStats.values.map { $0.prComments }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-    }
-	
-	public var avgPrCommentsPerUser: LimitedStat<Double> {
-		return repoStats.values.map { $0.avgPrComments }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-	}
-
-    public var linesAdded: LimitlessStat<Int> {
-        return repoStats.values.map { $0.linesAdded }.reduce(0, +)
-    }
-
-    public var avgLinesAddedPerRepo: LimitlessStat<Double> {
-        return repoStats.values.map { $0.linesAdded }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-    }
-	
-	public var avgLinesAddedPerUser: LimitlessStat<Double> {
-		return repoStats.values.map { $0.avgLinesAdded }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-	}
-
-    public var linesDeleted: LimitlessStat<Int> {
-        return repoStats.values.map { $0.linesDeleted }.reduce(0, +)
-    }
-
-    public var avgLinesDeletedPerRepo: LimitlessStat<Double> {
-        return repoStats.values.map { $0.linesDeleted }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-    }
-	
-	public var avgLinesDeletedPerUser: LimitlessStat<Double> {
-		return repoStats.values.map { $0.avgLinesDeleted }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-	}
-
-    public var lines: LimitlessStat<Int> {
-        return repoStats.values.map { $0.lines }.reduce(0, +)
-    }
-
-    public var avgLinesPerRepo: LimitlessStat<Double> {
-        return repoStats.values.map { $0.lines }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-    }
-	
-	public var avgLinesPerUser: LimitlessStat<Double> {
-		return repoStats.values.map { $0.avgLines }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-	}
-
-    public var commits: LimitlessStat<Int> {
-        return repoStats.values.map { $0.commits }.reduce(0, +)
-    }
-
-    public var avgCommitsPerRepo: LimitlessStat<Double> {
-        return repoStats.values.map { $0.commits }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
-    }
-	
-	public var avgCommitsPerUser: LimitlessStat<Double> {
-		return repoStats.values.map { $0.avgCommits }.reduce(0, { $0 + Double($1)/Double(repoStats.count) })
+	public init(orgName: String, repoStats: [RepositoryName: RepoStat]) {
+		self.orgName = orgName
+		self.repoStats = repoStats
+		
+		var users = [Username: UserStat]()
+		
+		for repo in repoStats.values {
+			for user in repo.userStats {
+				users[user.key, default: UserStat()] += user.value
+			}
+		}
+		
+		userStats = users
+		
+		pullRequestStats = .init(prStats: repoStats.values.map { $0.pullRequestStats })
+		codeStats = .init(codeStats: repoStats.values.map { $0.codeStats })
 	}
 
     public var earliestEvent: Date? {
@@ -154,5 +72,59 @@ public struct OrgStat {
 	/// events and there are no relevant events locally cached either.
 	public var unreliableRepositories: [RepositoryName] {
 		return repoStats.compactMap { $0.value.userStats.compactMap { $0.value.earliestEvent }.isEmpty ? $0.key : nil }
+	}
+	
+//	public typealias PullRequest = AggregatePullRequestStat
+//	public typealias Code = AggregateCodeStat
+}
+
+public extension OrgStat {
+	typealias StatAverages<B: Bound> = (user: BasicStat<B, Double>, repo: BasicStat<B, Double>)
+	typealias StatAggregate<B: Bound, Total: CustomStringConvertible> = SumAndAvg<BasicStat<B, Total>, StatAverages<B>>
+	
+	struct PullRequest {
+		/// Average is given in seconds
+		public let openLengths: AggregateLimitedStat<[TimeInterval], Double>
+		
+		public let opened: StatAggregate<Limited, Int>
+		
+		public let closed: StatAggregate<Limited, Int>
+		
+		public let comments: StatAggregate<Limited, Int>
+		
+		init(prStats: [RepoStat.PullRequest]) {
+			let allOpenLengths = prStats.map { $0.openLengths.total }.reduce([], +)
+			let avgOpenLength = allOpenLengths.map { $0.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) } }
+			
+			openLengths = (total: allOpenLengths, average: avgOpenLength)
+			
+			opened = OrgStat.aggregate(of: prStats.map { $0.opened })
+			closed = OrgStat.aggregate(of: prStats.map { $0.closed })
+			comments = OrgStat.aggregate(of: prStats.map { $0.comments })
+		}
+	}
+	
+	struct Code {
+		public let linesAdded: StatAggregate<Limitless, Int>
+		
+		public let linesDeleted: StatAggregate<Limitless, Int>
+		
+		public let lines: StatAggregate<Limitless, Int>
+		
+		public let commits: StatAggregate<Limitless, Int>
+		
+		init(codeStats: [RepoStat.Code]) {
+			linesAdded = OrgStat.aggregate(of: codeStats.map { $0.linesAdded })
+			linesDeleted = OrgStat.aggregate(of: codeStats.map { $0.linesDeleted })
+			lines = OrgStat.aggregate(of: codeStats.map { $0.lines })
+			commits = OrgStat.aggregate(of: codeStats.map { $0.commits })
+		}
+	}
+	
+	private static func aggregate<B: Bound>(of input: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>]) -> StatAggregate<B, Int> {
+		let repo = aggregateSumAndAvg(input.map { $0.total })
+		let userAvg = aggregateSumAndAvg(input.map { $0.average }).average
+		
+		return (total: repo.total, average: (user: userAvg, repo: repo.average))
 	}
 }
