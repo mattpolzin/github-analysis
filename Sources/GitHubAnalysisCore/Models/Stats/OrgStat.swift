@@ -79,7 +79,7 @@ public struct OrgStat {
 }
 
 public extension OrgStat {
-	typealias StatAverages<B: Bound> = (user: BasicStat<B, Double>, repo: BasicStat<B, Double>)
+	typealias StatAverages<B: Bound> = (perUser: BasicStat<B, Double>, perRepo: BasicStat<B, Double>)
 	typealias StatAggregate<B: Bound, Total: CustomStringConvertible> = SumAndAvg<BasicStat<B, Total>, StatAverages<B>>
 	
 	struct PullRequest {
@@ -125,6 +125,6 @@ public extension OrgStat {
 		let repo = aggregateSumAndAvg(input.map { $0.total })
 		let userAvg = aggregateSumAndAvg(input.map { $0.average }).average
 		
-		return (total: repo.total, average: (user: userAvg, repo: repo.average))
+		return (total: repo.total, average: (perUser: userAvg, perRepo: repo.average))
 	}
 }

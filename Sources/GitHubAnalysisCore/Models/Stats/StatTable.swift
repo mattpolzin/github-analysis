@@ -117,8 +117,8 @@ public struct StatTable {
     private var prOpenedColumn: UserColumn {
         return .init(
             header: "PRs opened",
-			total: string(describing: orgStat.prsOpened),
-            average: string(describing: orgStat.avgPrsOpenedPerUser),
+			total: string(describing: orgStat.pullRequestStats.opened.total),
+            average: string(describing: orgStat.pullRequestStats.opened.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.opened) } ?? "" }
         )
     }
@@ -126,8 +126,8 @@ public struct StatTable {
     private var prClosedColumn: UserColumn {
         return .init(
             header: "PRs closed",
-            total: string(describing: orgStat.prsClosed),
-            average: string(describing: orgStat.avgPrsClosedPerUser),
+            total: string(describing: orgStat.pullRequestStats.closed.total),
+            average: string(describing: orgStat.pullRequestStats.closed.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.closed) } ?? "" }
         )
     }
@@ -136,7 +136,7 @@ public struct StatTable {
         return .init(
             header: "Average PR open length (days)",
             total: "\\",
-            average: string(describing: orgStat.avgPROpenLength/(60 * 60 * 24)),
+            average: string(describing: orgStat.pullRequestStats.openLengths.average/(60 * 60 * 24)),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
         )
     }
@@ -144,8 +144,8 @@ public struct StatTable {
     private var prCommentsColumn: UserColumn {
         return .init(
             header: "PR comments",
-            total: string(describing: orgStat.prComments),
-            average: string(describing: orgStat.avgPrCommentsPerUser),
+            total: string(describing: orgStat.pullRequestStats.comments.total),
+            average: string(describing: orgStat.pullRequestStats.comments.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.commentEvents) } ?? "" }
         )
     }
@@ -153,8 +153,8 @@ public struct StatTable {
     private var linesOfCodeAddedColumn: UserColumn {
         return .init(
             header: "LOC Added",
-            total: string(describing: orgStat.linesAdded),
-            average: string(describing: orgStat.avgLinesAddedPerUser),
+            total: string(describing: orgStat.codeStats.linesAdded.total),
+            average: string(describing: orgStat.codeStats.linesAdded.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesAdded) } ?? "" }
         )
     }
@@ -162,8 +162,8 @@ public struct StatTable {
     private var linesOfCodeDeletedColumn: UserColumn {
         return .init(
             header: "LOC Deleted",
-            total: string(describing: orgStat.linesDeleted),
-            average: string(describing: orgStat.avgLinesDeletedPerUser),
+            total: string(describing: orgStat.codeStats.linesDeleted.total),
+            average: string(describing: orgStat.codeStats.linesDeleted.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesDeleted) } ?? "" }
         )
     }
@@ -171,8 +171,8 @@ public struct StatTable {
     private var totalLinesOfCodeColumn: UserColumn {
         return .init(
             header: "Total LOC",
-            total: string(describing: orgStat.lines),
-            average: string(describing: orgStat.avgLinesPerUser),
+            total: string(describing: orgStat.codeStats.lines.total),
+            average: string(describing: orgStat.codeStats.lines.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.lines) } ?? "" }
         )
     }
@@ -180,8 +180,8 @@ public struct StatTable {
     private var commitsColumn: UserColumn {
         return .init(
             header: "Commits",
-            total: string(describing: orgStat.commits),
-            average: string(describing: orgStat.avgCommitsPerUser),
+            total: string(describing: orgStat.codeStats.commits.total),
+            average: string(describing: orgStat.codeStats.commits.average.perUser),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.commits) } ?? "" }
         )
     }
