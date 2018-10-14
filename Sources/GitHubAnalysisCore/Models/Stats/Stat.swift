@@ -42,17 +42,13 @@ public typealias LimitedStat<Type: CustomStringConvertible> = BasicStat<Limited,
 public typealias LimitlessStat<Type: CustomStringConvertible> = BasicStat<Limitless, Type>
 
 public typealias SumAndAvg<Total, Avg> = (total: Total, average: Avg)
-public typealias AggregateLimitedStat<Total: CustomStringConvertible,Avg: CustomStringConvertible>
-	= SumAndAvg<LimitedStat<Total>, LimitedStat<Avg>>
-public typealias AggregateLimitlessStat<Total: CustomStringConvertible, Avg: CustomStringConvertible>
-	= SumAndAvg<LimitlessStat<Total>, LimitlessStat<Avg>>
 
 public func aggregateSumAndAvg<B: Bound, T: BinaryInteger>(_ values: [BasicStat<B, T>]) -> SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>> {
 	let agg = aggregateSumAndAvg(values.map { $0.map { Double($0) } })
 	return (total: agg.total.map(Int.init), average: agg.average)
 }
 
-public func aggregateSumAndAvg<B: Bound, T: BinaryFloatingPoint & Addable>(_ values: [BasicStat<B, T>]) -> SumAndAvg<BasicStat<B, Double>, BasicStat<B, Double>> {
+public func aggregateSumAndAvg<B: Bound, T: BinaryFloatingPoint>(_ values: [BasicStat<B, T>]) -> SumAndAvg<BasicStat<B, Double>, BasicStat<B, Double>> {
 	return (total: values.reduce(0, +).map(Double.init),
 			average: values.reduce(0) { $0 + Double($1)/Double(values.count) }
 	)

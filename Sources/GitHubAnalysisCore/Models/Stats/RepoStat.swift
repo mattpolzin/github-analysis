@@ -28,30 +28,34 @@ public struct RepoStat {
 		pullRequestStats = .init(prStats: userStats.values.map { $0.pullRequestStat })
 		codeStats = .init(codeStats: userStats.values.map { $0.codeStat })
 	}
-	
-	public typealias PullRequest = AggregatePullRequestStat
-	public typealias Code = AggregateCodeStat
 }
 
-public struct AggregatePullRequestStat {
-	/// Average is given in seconds
-	public let openLengths: AggregateLimitedStat<[TimeInterval], Double>
+public extension RepoStat {
+	typealias AggregateLimitedStat<Total: CustomStringConvertible,Avg: CustomStringConvertible>
+		= SumAndAvg<LimitedStat<Total>, LimitedStat<Avg>>
+	typealias AggregateLimitlessStat<Total: CustomStringConvertible, Avg: CustomStringConvertible>
+		= SumAndAvg<LimitlessStat<Total>, LimitlessStat<Avg>>
 	
-	public let opened: AggregateLimitedStat<Int, Double>
+	public struct PullRequest {
+		/// Average is given in seconds
+		public let openLengths: AggregateLimitedStat<[TimeInterval], Double>
+		
+		public let opened: AggregateLimitedStat<Int, Double>
+		
+		public let closed: AggregateLimitedStat<Int, Double>
+		
+		public let comments: AggregateLimitedStat<Int, Double>
+	}
 	
-	public let closed: AggregateLimitedStat<Int, Double>
-	
-	public let comments: AggregateLimitedStat<Int, Double>
-}
-
-public struct AggregateCodeStat {
-	public let linesAdded: AggregateLimitlessStat<Int, Double>
-	
-	public let linesDeleted: AggregateLimitlessStat<Int, Double>
-	
-	public let lines: AggregateLimitlessStat<Int, Double>
-	
-	public let commits: AggregateLimitlessStat<Int, Double>
+	public struct Code {
+		public let linesAdded: AggregateLimitlessStat<Int, Double>
+		
+		public let linesDeleted: AggregateLimitlessStat<Int, Double>
+		
+		public let lines: AggregateLimitlessStat<Int, Double>
+		
+		public let commits: AggregateLimitlessStat<Int, Double>
+	}
 }
 
 extension RepoStat.PullRequest {

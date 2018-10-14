@@ -84,7 +84,7 @@ public extension OrgStat {
 	
 	struct PullRequest {
 		/// Average is given in seconds
-		public let openLengths: AggregateLimitedStat<[TimeInterval], Double>
+		public let openLengths: SumAndAvg<LimitedStat<[TimeInterval]>, LimitedStat<Double>>
 		
 		public let opened: StatAggregate<Limited, Int>
 		
