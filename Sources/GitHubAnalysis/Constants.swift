@@ -20,4 +20,5 @@ let kCacheFileArg = "-cache"
 
 let kPrintJSONFlag = "-print-json"
 let kOutputCSVFlag = "-csv"
+let kSkipAnalysisFlag = "-skip-analysis"
 let kHelpFlag = "-help"

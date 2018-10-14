@@ -28,12 +28,14 @@ struct GitHubAnalysisUsage: Usage {
 	let flags = UsageCategory(name: "FLAGS",
 							  note: nil,
 							  rules: [
+								FlagRule(name: kHelpFlag,
+										 usage: "Print the usage."),
 								FlagRule(name: kPrintJSONFlag,
 										 usage: "Print the JSON response from GitHub before printing analysis results. This is mostly just useful for troubleshooting."),
 								FlagRule(name: kOutputCSVFlag,
 										 usage: "Generate a github_analysis.csv file in the current working directory"),
-								FlagRule(name: kHelpFlag,
-										 usage: "Print the usage.")
+								FlagRule(name: kSkipAnalysisFlag,
+										 usage: "Skip the analysis of data. Use this flag to download and cache event data without performing analysis. This will render much of the other flags meaningless because many other options are only applied after new event data is cached for future use. When using this flag, only information about downloading and caching events is printed to the terminal and nothing is output to a CSV file.")
 		])
 	
 	let arguments = UsageCategory(name: "ARGUMENTS",

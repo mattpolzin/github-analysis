@@ -74,11 +74,14 @@ func writeCache() {
 	// so we don't gain anything by caching them.
 	guard let writeResult = cache?.write(events: allEvents) else { return }
 	
-	if case .failure = writeResult {
+	guard case .success = writeResult else {
 		print("")
 		print("error trying to write cache data")
 		print("")
+		return
 	}
+	
+	print("\(allEvents.count) events written to the cache.")
 }
 
 func requestDataFromGitHub() {
@@ -305,6 +308,8 @@ while analysisRequestsInFlight > 0 &&
 
 writeCache()
 
-applyFilters()
+if !inputs.skipAnalysis {
+	applyFilters()
 
-startAnalysis()
+	startAnalysis()
+}
