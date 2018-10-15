@@ -11,7 +11,8 @@ import GitHubAnalysisCore
 
 class UserStatTests: XCTestCase {
 
-	
+	// seems to be important for `swift test generate-linuxmain`
+	func test_Placeholder() {}
 }
 
 
