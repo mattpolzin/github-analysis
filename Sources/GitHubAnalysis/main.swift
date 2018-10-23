@@ -270,7 +270,7 @@ func startAnalysis() {
 
     print("")
 
-	let table = StatTable(orgStat: orgStats, laterThan: inputs.earliestDate)
+	let table = StatTable(orgStat: orgStats, laterThan: inputs.earliestDate, insertLimitFootnote: !inputs.skipFootnotes)
 	
 	func fillIfBlank(idx: Int, in array: [String]) -> String {
 		return array.count > idx ? array[idx] : " "

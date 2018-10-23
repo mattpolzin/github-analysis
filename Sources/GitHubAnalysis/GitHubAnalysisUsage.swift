@@ -35,7 +35,9 @@ struct GitHubAnalysisUsage: Usage {
 								FlagRule(name: kOutputCSVFlag,
 										 usage: "Generate a github_analysis.csv file in the current working directory"),
 								FlagRule(name: kSkipAnalysisFlag,
-										 usage: "Skip the analysis of data. Use this flag to download and cache event data without performing analysis. This will render much of the other flags meaningless because many other options are only applied after new event data is cached for future use. When using this flag, only information about downloading and caching events is printed to the terminal and nothing is output to a CSV file.")
+										 usage: "Skip the analysis of data. Use this flag to download and cache event data without performing analysis. This will render much of the other flags meaningless because many other options are only applied after new event data is cached for future use. When using this flag, only information about downloading and caching events is printed to the terminal and nothing is output to a CSV file."),
+								FlagRule(name: kSkipFootnotes,
+										 usage: "By default, analyzed values are annotated with footnotes where you should be aware of a limitation or clarification. This flag disables those footnotes. The advantage to disabling the footnotes is that the numbers in an output CSV file will be automatically parsed as numbers rather than string values given the character used to mark the value as having a footnote.")
 		])
 	
 	let arguments = UsageCategory(name: "ARGUMENTS",

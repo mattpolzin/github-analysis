@@ -18,6 +18,7 @@ struct GitHubAnalysisInputs {
 	let outputCSV: Bool
 	let printJSON: Bool
 	let skipAnalysis: Bool
+	let skipFootnotes: Bool
 	let cacheFileLocation: URL?
 	
 	static func from(scriptInputs inputs: Inputs) -> Result<GitHubAnalysisInputs, GHAInputsError> {
@@ -65,6 +66,8 @@ struct GitHubAnalysisInputs {
 		
 		let skipAnalysis = inputs.isFlagSet(named: kSkipAnalysisFlag)
 		
+		let skipFootnotes = inputs.isFlagSet(named: kSkipFootnotes)
+		
 		let cacheFileLocation = inputs.variable(named: kCacheFileArg).map(URL.init(fileURLWithPath:))
 		
 		return .success(GitHubAnalysisInputs(personalAccessToken: personalAccessToken,
@@ -76,6 +79,7 @@ struct GitHubAnalysisInputs {
 											 outputCSV: outputCSVFlag,
 											 printJSON: printJSON,
 											 skipAnalysis: skipAnalysis,
+											 skipFootnotes: skipFootnotes,
 											 cacheFileLocation: cacheFileLocation))
 	}
 	

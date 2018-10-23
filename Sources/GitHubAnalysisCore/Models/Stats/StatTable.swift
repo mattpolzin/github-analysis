@@ -19,20 +19,23 @@ public struct StatTable {
     private let users: [Username] // important to always order the same way
 	private let limitMatters: Bool
 	
-	public init(orgStat: OrgStat, laterThan earliestDate: Date?) {
+	public init(orgStat: OrgStat,
+				laterThan earliestDate: Date?,
+				insertLimitFootnote: Bool) {
         self.orgStat = orgStat
         self.users = Array(orgStat.userStats.keys)
 		
 		// The limit matters if the earliest reliable date for the aggregate data is later
 		// than the earliest date filter (i.e. all analyzed data originates from later in
 		// time than the lower limit filter).
-		limitMatters = orgStat.earliestReliable.flatMap { earliestReliable in
-			earliestDate
-				.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) }
-				.map { earliestFilter in
-				return earliestReliable.date > earliestFilter
-			}
-		} ?? true
+		limitMatters = insertLimitFootnote
+			&& orgStat.earliestReliable.flatMap { earliestReliable in
+				earliestDate
+					.flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) }
+					.map { earliestFilter in
+						return earliestReliable.date > earliestFilter
+				}
+			} ?? true
     }
 
     private typealias UserValue = String
