@@ -12,7 +12,7 @@ import Alamofire
 
 // MARK: Read Input
 let inputs: GitHubAnalysisInputs
-switch GitHubAnalysisInputs.from(scriptInputs: Inputs()) {
+switch GitHubAnalysisInputs.from(scriptInputs: ScriptInputs()) {
 case .failure(.needHelp):
 	print(String(describing: GitHubAnalysisUsage()))
 	exit(0)
@@ -34,7 +34,7 @@ let cache = GitHubAnalysisCache(from: inputs, default: defaultCacheFileLocation)
 
 if cache == nil {
     print("")
-    print("The cache file at \(inputs.cacheFileLocation ?? defaultCacheFileLocation) is either not readable or not writable. Analysis will continue without caching.")
+    print("The cache file at \(inputs[\.cacheFileLocation] ?? defaultCacheFileLocation) is either not readable or not writable. Analysis will continue without caching.")
     print("")
 }
 
@@ -85,22 +85,22 @@ func writeCache() {
 }
 
 func requestDataFromGitHub() {
-	for repository in inputs.repositories {
+	for repository in inputs[\.repositories] {
 		// get new events
 		analysisRequestsInFlight += 1
 		Alamofire.request(
-			GitHubRequest.events(with: inputs.personalAccessToken,
+			GitHubRequest.events(with: inputs[\.personalAccessToken],
 								 from: repository,
-								 ownedBy: inputs.repositoryOwner)
+								 ownedBy: inputs[\.repositoryOwner])
 				.urlRequest
 			).responseData(completionHandler: handle(events:))
 		
 		// get all stats for each repo
 		analysisRequestsInFlight += 1
 		Alamofire.request(
-			GitHubRequest.stats(with: inputs.personalAccessToken,
+			GitHubRequest.stats(with: inputs[\.personalAccessToken],
 								for: repository,
-								ownedBy: inputs.repositoryOwner)
+								ownedBy: inputs[\.repositoryOwner])
 				.urlRequest
 			).responseData{ handle(stats: $0, withRetryOn: repository) }
 	}
@@ -129,7 +129,7 @@ func handle(events response: DataResponse<Data>) {
         return
     }
 
-    if inputs.printJSON {
+    if inputs[\.printJSON] {
         print(String(data: responseData, encoding: .utf8)!)
     }
 
@@ -145,7 +145,7 @@ func handle(events response: DataResponse<Data>) {
         }
 
         Alamofire.request(
-            GitHubRequest(accessToken: inputs.personalAccessToken,
+            GitHubRequest(accessToken: inputs[\.personalAccessToken],
                           url: next)
             .urlRequest
         ).responseData(completionHandler: handle(events:))
@@ -188,7 +188,7 @@ func handle(stats response: DataResponse<Data>, repository: String) {
         return
     }
 
-    if inputs.printJSON {
+    if inputs[\.printJSON] {
         print(String(data: responseData, encoding: .utf8)!)
     }
 
@@ -212,10 +212,10 @@ func applyFilters() {
 	// being analyzed this time.
     allEvents = allEvents.filter { $0.data.repositoryNames.map(filters.repositories).contains(true) }
 
-    print("\(allEvents.count) events across repositories: \(inputs.repositories.joined(separator: ", "))")
+    print("\(allEvents.count) events across repositories: \(inputs[\.repositories].joined(separator: ", "))")
     print("\(allStats.count) (user, repository) pairings.")
 
-    if let earliestDate = inputs.earliestDate {
+    if let earliestDate = inputs[\.earliestDate] {
 
         // weed out all events earlier than earliest date
 		allEvents = allEvents.filter { filters.earliestDate($0.createdAt) }
@@ -231,7 +231,7 @@ func applyFilters() {
         })
     }
 	
-	if let latestDate = inputs.latestDate {
+	if let latestDate = inputs[\.latestDate] {
 		
 		// weed out all events later than latest date
 		allEvents = allEvents.filter { filters.latestDate($0.createdAt) }
@@ -247,7 +247,7 @@ func applyFilters() {
 		})
 	}
 
-    if let users = inputs.users?.joined(separator: ", ") {
+    if let users = inputs[\.users]?.joined(separator: ", ") {
         // weed out all events for users not in the filter
         allEvents = allEvents.filter { $0.data.userLogin.map(filters.users) ?? true }
 
@@ -266,11 +266,13 @@ func startAnalysis() {
     timeSortedEvents.first.map { print("Earliest event: \($0.createdAt)") }
     timeSortedEvents.last.map { print("Latest event: \($0.createdAt)") }
     print("")
-    let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: inputs.repositoryOwner)
+    let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: inputs[\.repositoryOwner])
 
     print("")
 
-	let table = StatTable(orgStat: orgStats, laterThan: inputs.earliestDate, insertLimitFootnote: !inputs.skipFootnotes)
+	let table = StatTable(orgStat: orgStats,
+						  laterThan: inputs[\.earliestDate],
+						  insertLimitFootnote: !inputs[\.skipFootnotes])
 	
 	func fillIfBlank(idx: Int, in array: [String]) -> String {
 		return array.count > idx ? array[idx] : " "
@@ -283,7 +285,7 @@ func startAnalysis() {
 		print("")
 	}
 
-    if inputs.outputCSV {
+    if inputs[\.outputCSV] {
         print("")
         print("Writing CSV file to github_analysis.csv...")
         let csvUrl = URL(fileURLWithPath: currentDirectory).appendingPathComponent("github_analysis").appendingPathExtension("csv")
@@ -308,7 +310,7 @@ while analysisRequestsInFlight > 0 &&
 
 writeCache()
 
-if !inputs.skipAnalysis {
+if !inputs[\.skipAnalysis] {
 	applyFilters()
 
 	startAnalysis()

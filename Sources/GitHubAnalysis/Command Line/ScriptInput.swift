@@ -16,7 +16,7 @@ extension CommandLineArguments {
     }
 }
 
-struct Inputs {
+struct ScriptInputs {
     let commandLineArguments = CommandLineArguments()
 
     /// Retrieve a named (i.e. floating) argument value.

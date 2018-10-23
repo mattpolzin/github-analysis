@@ -13,8 +13,7 @@ struct GitHubAnalysisCache {
 	let fileUrl: URL
 	
 	init?(from inputs: GitHubAnalysisInputs, default defaultCacheFileLocation: URL) {
-		let cacheFileUrl = inputs
-			.cacheFileLocation
+		let cacheFileUrl = inputs[\.cacheFileLocation]
 			.map { GitHubAnalysisCache.validCacheURL(forURL: $0) } ?? GitHubAnalysisCache.validCacheURL(forURL: defaultCacheFileLocation)
 		
 		guard let fileUrl = cacheFileUrl else {

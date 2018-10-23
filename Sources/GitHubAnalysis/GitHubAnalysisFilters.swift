@@ -21,18 +21,18 @@ struct GitHubAnalysisFilters {
 	let latestDate: (Date) -> Bool
 	
 	init(from inputs: GitHubAnalysisInputs) {
-		repositories = inputs.repositories.contains
+		repositories = inputs[\.repositories].contains
 		
 		users = { username in
-			return inputs.users?.contains(username) ?? true
+			return inputs[\.users]?.contains(username) ?? true
 		}
 		
 		earliestDate = { date in
-			return inputs.earliestDate.map { date >= $0 } ?? true
+			return inputs[\.earliestDate].map { date >= $0 } ?? true
 		}
 		
 		latestDate = { date in
-			return inputs.latestDate.map { date <= $0 } ?? true
+			return inputs[\.latestDate].map { date <= $0 } ?? true
 		}
 	}
 }
