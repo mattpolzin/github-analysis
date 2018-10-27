@@ -1,17 +1,20 @@
 # GitHubAnalysis
 
 ## Prerequisites & Dependencies
-You need Swift 4.1+ and Swift Tools 4.0+.
+You need Swift 4.2+ and Swift Tools 4.2+.
 
 Download Xcode, then install command line tools.
 
 You will also need a GitHub personal access token. Generate one at https://github.com/settings/tokens. This can be specified as an argument when executing `github-analysis`, but it is most convenient to set the `GITHUB_ANALYSIS_TOKEN` environment variable.
+
+At the moment you can only build GitHubAnalysis for platforms that Alamofire will build for, but in the future I will be removing that dependency so that the script can be run on Linux platforms as well.
 
 ### Package Dependencies
 These dependencies will be downloaded and linked against automatically by the Swift Package Manager.
 
 1. Alamofire
 2. Result
+3. SwiftCheck (only used by test targets)
 
 ## Building
 1. `swift package resolve`
@@ -48,6 +51,10 @@ You can specify a list of users to analyze and all other users that have contrib
 
 ## Contributing
 Please fork the repository and make any additions that suit your needs. I welcome Pull Requests back into this repository; I'm never too busy to maintain a pet project but I might get too busy to make valuable additions myself.
+
+### General Notes
+1. Do not add any Xcode project or environment files to the repository. The Xcode project should remain entirely buildable using Swift Package Manager (see Dev Env section below).
+2. After adding new tests, run `swift test --generate-linuxmain` and commit the changes that script makes to the repository. This keeps unit testing on Linux in sync with unit testing on OS X.
 
 ### Dev Env
 Just a note for anyone unfamiliar with the Swift Package Manager: 
