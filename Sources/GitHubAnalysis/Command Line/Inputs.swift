@@ -8,54 +8,16 @@
 import Foundation
 
 protocol InputUsage {
-	associatedtype Rule: UsageRule
-	
-	var usage: Rule { get }
-}
-
-private class _AnyInputUsageBase<Rule: UsageRule>: InputUsage {
-	init() {
-		guard type(of: self) != _AnyInputUsageBase.self else {
-			fatalError("_AnyInputBase cannot be instantiated. It is abstract.")
-		}
-	}
-	
-	var usage: Rule {
-		fatalError("_AnyInputBase cannot be used directly. It is abstract.")
-	}
-}
-
-private class _AnyInputUsageBox<Rule: InputUsage>: _AnyInputUsageBase<Rule.Rule> {
-	let concrete: Rule
-	
-	init(_ boxed: Rule) {
-		self.concrete = boxed
-	}
-	
-	override var usage: Rule.Rule {
-		return concrete.usage
-	}
-}
-
-class AnyInputUsage<Rule: UsageRule>: InputUsage {
-	private let box: _AnyInputUsageBase<Rule>
-	
-	init<IRule: InputUsage>(_ concrete: IRule) where IRule.Rule == Rule {
-		box = _AnyInputUsageBox(concrete)
-	}
-	
-	var usage: Rule {
-		return box.usage
-	}
+	static var usage: UsageRule.Type { get }
 }
 
 struct VoidInput<Rule: UsageRule>: InputUsage {
-	let usage: Rule
+	static var usage: UsageRule.Type { return Rule.self }
 }
 
 struct Input<Input, Rule: UsageRule>: InputUsage {
 	let value: Input
-	let usage: Rule
+	static var usage: UsageRule.Type { return Rule.self }
 }
 
 struct InputCategory {
@@ -64,39 +26,35 @@ struct InputCategory {
 }
 
 protocol InputDescriptions {
-	var environmentInputs: [AnyInputUsage<EnvironmentRule>] { get }
-	var argumentInputs: [AnyInputUsage<ArgumentRule>] { get }
-	var flagInputs: [AnyInputUsage<FlagRule>] { get }
+	static var environmentInputs: [InputUsage.Type] { get }
+	static var argumentInputs: [InputUsage.Type] { get }
+	static var flagInputs: [InputUsage.Type] { get }
 }
 
 protocol InputCategoryDescriptions: InputDescriptions, Usage {
-	var scriptName: String { get }
 	
-	var notes: UsageCategory<NoteRule>? { get }
+	static var notes: UsageCategory? { get }
 	
-	var environmentInputUsage: InputCategory { get }
+	static var environmentInputUsage: InputCategory { get }
 	
-	var argumentInputUsage: InputCategory { get }
+	static var argumentInputUsage: InputCategory { get }
 	
-	var flagInputUsage: InputCategory { get }
+	static var flagInputUsage: InputCategory { get }
 }
 
 extension InputCategoryDescriptions {
-	var environment: UsageCategory<EnvironmentRule> {
-		return UsageCategory(name: environmentInputUsage.name,
-							 note: environmentInputUsage.note,
-							 rules: environmentInputs.map { $0.usage })
-	}
-	
-	var arguments: UsageCategory<ArgumentRule> {
-		return UsageCategory(name: argumentInputUsage.name,
-							 note: argumentInputUsage.note,
-							 rules: argumentInputs.map { $0.usage })
-	}
-	
-	var flags: UsageCategory<FlagRule> {
-		return UsageCategory(name: flagInputUsage.name,
-							 note: flagInputUsage.note,
-							 rules: flagInputs.map { $0.usage })
+	static var categories: [UsageCategory] {
+		return [
+			notes,
+			UsageCategory(name: environmentInputUsage.name,
+						  note: environmentInputUsage.note,
+						  rules: environmentInputs.map { $0.usage }),
+			UsageCategory(name: argumentInputUsage.name,
+						  note: argumentInputUsage.note,
+						  rules: argumentInputs.map { $0.usage }),
+			UsageCategory(name: flagInputUsage.name,
+						  note: flagInputUsage.note,
+						  rules: flagInputs.map { $0.usage })
+			].compactMap { $0 }
 	}
 }

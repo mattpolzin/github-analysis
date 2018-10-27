@@ -14,7 +14,7 @@ import Alamofire
 let inputs: GitHubAnalysisInputs
 switch GitHubAnalysisInputs.from(scriptInputs: ScriptInputs()) {
 case .failure(.needHelp):
-	print(String(describing: GitHubAnalysisUsage()))
+	print(GitHubAnalysisInputs.description)
 	exit(0)
 case .failure(.missingRequirement(description: let description)):
 	print(description)
