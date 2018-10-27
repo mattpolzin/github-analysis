@@ -40,7 +40,7 @@ You can generate a CSV file in addition to outputting stats to the terminal. The
 `github-analysis owner repo1,repo2,repo3 --csv`
 
 ### Set Date Limit
-You can choose to only analyse events occuring after a certain date.
+You can choose to only analyze events occuring after a certain date (and or before a certain date with `--earlier-than`).
 
 `github-analysis owner repo --later-than=2018-09-15`
 
@@ -48,6 +48,11 @@ You can choose to only analyse events occuring after a certain date.
 You can specify a list of users to analyze and all other users that have contributed to the given repositories will be ignored.
 
 `github-analysis owner repo --users=user1,user2,user3`
+
+### Hide warning and caveat footnotes
+By default, values will get annotated if there is a warning or a caveat to be aware of for the value. You can disable these footnotes to get cleaner output (perhaps to import into a spreadsheet and analyze further).
+
+`github-analysis owner repo --skip-footnotes`
 
 ## Contributing
 Please fork the repository and make any additions that suit your needs. I welcome Pull Requests back into this repository; I'm never too busy to maintain a pet project but I might get too busy to make valuable additions myself.
