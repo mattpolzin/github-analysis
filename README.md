@@ -40,7 +40,7 @@ You can generate a CSV file in addition to outputting stats to the terminal. The
 `github-analysis owner repo1,repo2,repo3 --csv`
 
 ### Set Date Limit
-You can choose to only analyze events occuring after a certain date (and or before a certain date with `--earlier-than`).
+You can choose to only analyze events occuring after a certain date (and/or before a certain date with `--earlier-than`).
 
 `github-analysis owner repo --later-than=2018-09-15`
 
