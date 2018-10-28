@@ -8,7 +8,6 @@
 
 import Foundation
 import GitHubAnalysisCore
-import Alamofire
 
 // MARK: Read Input
 let inputs: GitHubAnalysisInputs
@@ -43,7 +42,6 @@ var allEvents = Set<GitHubEvent>()
 var allStats = Set<RepoContributor>()
 
 // MARK: Runloop variables
-var analysisRequestsInFlight = 0
 let runLoop = RunLoop.current
 let distantFuture = Date.distantFuture
 
@@ -87,30 +85,35 @@ func writeCache() {
 func requestDataFromGitHub() {
 	for repository in inputs[\.repositories] {
 		// get new events
-		analysisRequestsInFlight += 1
-		Alamofire.request(
-			GitHubRequest.events(with: inputs[\.personalAccessToken],
-								 from: repository,
-								 ownedBy: inputs[\.repositoryOwner])
-				.urlRequest
-			).responseData(completionHandler: handle(events:))
+		let eventsRequest = GitHubRequest.events(with: inputs[\.personalAccessToken],
+												 from: repository,
+												 ownedBy: inputs[\.repositoryOwner])
+			.urlRequest
+		
+		Network.request(eventsRequest, completion: handle(events:))
 		
 		// get all stats for each repo
-		analysisRequestsInFlight += 1
-		Alamofire.request(
-			GitHubRequest.stats(with: inputs[\.personalAccessToken],
-								for: repository,
-								ownedBy: inputs[\.repositoryOwner])
-				.urlRequest
-			).responseData{ handle(stats: $0, withRetryOn: repository) }
+		let statsRequest = GitHubRequest.stats(with: inputs[\.personalAccessToken],
+											   for: repository,
+											   ownedBy: inputs[\.repositoryOwner])
+			.urlRequest
+		
+		Network.request(statsRequest) { handle(stats: $0, withRetryOn: repository) }
 	}
 }
 
-func handle(events response: DataResponse<Data>) {
+func handle(events result: NetworkResult<Data>) {
     let nextLink: URL?
 
-    if let headers = response.response?.allHeaderFields,
-        let header = headers["Link"] as? String {
+	guard case let .success(response) = result,
+		let httpResponse = response.urlResponse as? HTTPURLResponse else {
+			print("Failed to retrieve events from GitHub.")
+			return
+	}
+	
+	let headers = httpResponse.allHeaderFields
+	
+    if let header = headers["Link"] as? String {
             do {
                 let linkHeaders = try LinkHeaders(headerValue: header)
 
@@ -123,41 +126,34 @@ func handle(events response: DataResponse<Data>) {
         nextLink = nil
     }
 
-    guard let responseData = response.data else {
-        print("Failed to get valid events response from GitHub")
-        analysisRequestsInFlight -= 1
-        return
-    }
-
     if inputs[\.printJSON] {
-        print(String(data: responseData, encoding: .utf8)!)
+        print(String(data: response.data, encoding: .utf8)!)
     }
 
     let decoder = JSONDecoder()
     do {
-        let newEvents = try decoder.decode([GitHubEvent].self, from: responseData)
+        let newEvents = try decoder.decode([GitHubEvent].self, from: response.data)
 
         allEvents = allEvents.union(newEvents)
 
         guard let next = nextLink else {
-            analysisRequestsInFlight -= 1
             return
         }
 
-        Alamofire.request(
-            GitHubRequest(accessToken: inputs[\.personalAccessToken],
-                          url: next)
-            .urlRequest
-        ).responseData(completionHandler: handle(events:))
+		let request = GitHubRequest(accessToken: inputs[\.personalAccessToken],
+									url: next).urlRequest
+		
+		Network.request(request, completion: handle(events:))
 
     } catch {
         print("error trying to convert events data to JSON")
-        analysisRequestsInFlight -= 1
     }
 }
 
-func handle(stats response: DataResponse<Data>, withRetryOn repository: String) {
-    if response.response?.statusCode == 202 {
+func handle(stats result: NetworkResult<Data>, withRetryOn repository: String) {
+    if case let .success(response) = result,
+		let httpResponse = response.urlResponse as? HTTPURLResponse,
+		httpResponse.statusCode == 202 {
 #if false
         // The following retry is crashing the compiler and I am out of patience for fixing it at the moment.
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
@@ -169,32 +165,28 @@ func handle(stats response: DataResponse<Data>, withRetryOn repository: String) 
                 ).responseData(completionHandler: { handle(stats: $0, repository: repository) })
         }
 #else
-        analysisRequestsInFlight -= 1
         print("GitHub needs to process stats for \(repository). Run script again in a few minutes.")
 #endif
         return
     }
 
-    handle(stats: response, repository: repository)
+    handle(stats: result, repository: repository)
 }
 
-func handle(stats response: DataResponse<Data>, repository: String) {
-    defer {
-        analysisRequestsInFlight -= 1
-    }
+func handle(stats result: NetworkResult<Data>, repository: String) {
 
-    guard let responseData = response.data else {
+    guard case let .success(response) = result else {
         print("Failed to get valid stats response from GitHub")
         return
     }
 
     if inputs[\.printJSON] {
-        print(String(data: responseData, encoding: .utf8)!)
+        print(String(data: response.data, encoding: .utf8)!)
     }
 
     let decoder = JSONDecoder()
     do {
-        let newStats = try decoder.decode([GitHubContributor].self, from: responseData)
+        let newStats = try decoder.decode([GitHubContributor].self, from: response.data)
 
         // order is important here. We want new stats to override old stats for the same user,
         // so allStats is unioned TO newStats rather than the other way around.
@@ -305,8 +297,10 @@ readCache()
 requestDataFromGitHub()
 
 // wait for requests to finish
-while analysisRequestsInFlight > 0 &&
-    runLoop.run(mode: RunLoop.Mode.default, before: distantFuture) {}
+while Network.requestsInFlight > 0 &&
+    runLoop.run(mode: RunLoop.Mode.default, before: distantFuture) {
+//		print("Requests in flight: \(Network.requestsInFlight)")
+}
 
 writeCache()
 

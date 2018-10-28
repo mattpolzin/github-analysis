@@ -1,6 +1,6 @@
 //
 //  LinkHeaders.swift
-//  Alamofire
+//  GitHubAnalysisCore
 //
 //  Created by Mathew Polzin on 9/29/18.
 //

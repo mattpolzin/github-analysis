@@ -1,6 +1,6 @@
 //
 //  GitHubRequest.swift
-//  Alamofire
+//  GitHubAnalysisCore
 //
 //  Created by Mathew Polzin on 9/29/18.
 //
@@ -15,6 +15,7 @@ public struct GitHubRequest {
     public init(accessToken: AccessToken, url: URL) {
         var request = URLRequest(url: url)
         request.addValue("token \(accessToken)", forHTTPHeaderField: "Authorization")
+		request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
         urlRequest = request
     }

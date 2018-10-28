@@ -1,6 +1,6 @@
 //
 //  Stat.swift
-//  Alamofire
+//  GitHubAnalysisCore
 //
 //  Created by Mathew Polzin on 10/4/18.
 //
