@@ -12,9 +12,8 @@ At the moment you can only build GitHubAnalysis for platforms that Alamofire wil
 ### Package Dependencies
 These dependencies will be downloaded and linked against automatically by the Swift Package Manager.
 
-1. Alamofire
-2. Result
-3. SwiftCheck (only used by test targets)
+1. Result
+2. SwiftCheck (only used by test targets)
 
 ## Building
 1. `swift package resolve`
@@ -62,7 +61,7 @@ Please fork the repository and make any additions that suit your needs. I welcom
 2. After adding new tests, run `swift test --generate-linuxmain` and commit the changes that script makes to the repository. This keeps unit testing on Linux in sync with unit testing on OS X.
 
 ### Dev Env
-Just a note for anyone unfamiliar with the Swift Package Manager: 
+Just a note for anyone unfamiliar with the Swift Package Manager:
 
 You can still do your development in Xcode, and I prefer to do so. Make sure that any Groups you create correlate to folders in the repository and the rest should be cake.
 run `swift package generate-xcodeproj` to get a project set up on your machine.
