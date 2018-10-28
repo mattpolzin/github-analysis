@@ -45,6 +45,11 @@ var allEvents = Set<GitHubEvent>()
 var allStats = Set<RepoContributor>()
 
 // MARK: Runloop variables
+#if os(Linux)
+let runLoopMode = RunLoopMode.defaultRunLoopMode
+#else
+let runLoopMode = RunLoop.Mode.default
+#endif
 let runLoop = RunLoop.current
 let distantFuture = Date.distantFuture
 
@@ -305,7 +310,7 @@ requestDataFromGitHub()
 
 // wait for requests to finish
 while Network.requestsInFlight > 0 &&
-    runLoop.run(mode: RunLoop.Mode.default, before: distantFuture) {
+    runLoop.run(mode: runLoopMode, before: distantFuture) {
 //		print("Requests in flight: \(Network.requestsInFlight)")
 }
 
