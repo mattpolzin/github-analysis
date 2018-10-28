@@ -139,3 +139,14 @@ extension GitHubAnalysisInputs {
 		case missingRequirement(description: String)
 	}
 }
+
+extension GitHubAnalysisInputs {
+	var logLevel: Log.Level {
+		let levels: [Log.Level] = [
+			self[\.verbose] ? .verbose : nil,
+			self[\.quiet] ? .quiet : nil
+		].compactMap { $0 }
+		
+		return Log.Level(mostRestrictiveOf: levels)
+	}
+}

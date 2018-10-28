@@ -22,6 +22,9 @@ case .success(let goodInputs):
 	inputs = goodInputs
 }
 
+// MARK: Set up Log
+let log = Log(maxLevel: inputs.logLevel)
+
 // MARK: Create Filters
 let filters = GitHubAnalysisFilters(from: inputs)
 
@@ -32,9 +35,9 @@ let defaultCacheFileLocation = URL(fileURLWithPath: currentDirectory).appendingP
 let cache = GitHubAnalysisCache(from: inputs, default: defaultCacheFileLocation)
 
 if cache == nil {
-    print("")
-    print("The cache file at \(inputs[\.cacheFileLocation] ?? defaultCacheFileLocation) is either not readable or not writable. Analysis will continue without caching.")
-    print("")
+    log.print("")
+    log.print("The cache file at \(inputs[\.cacheFileLocation] ?? defaultCacheFileLocation) is either not readable or not writable. Analysis will continue without caching.")
+    log.print("")
 }
 
 // MARK: Events and Stats Globals
@@ -51,18 +54,18 @@ func readCache() {
 	
 	switch readResult {
 	case .failure(.fileError):
-		print("Unexpected error opening cache file for reading. Continuing.")
+		log.print("Unexpected error opening cache file for reading. Continuing.")
 	case .failure(.jsonError):
-		print("")
-		print("error trying to read cache data")
-		print("")
+		log.print("")
+		log.print("error trying to read cache data")
+		log.print("")
 	case .failure(.noData):
-		print("No cache data found. Continuing.")
+		log.print("No cache data found. Continuing.")
 	case .success(let newEvents):
 		let countBeforeCache = allEvents.count
 		allEvents = allEvents.union(newEvents)
 		
-		print("\(allEvents.count - countBeforeCache) events loaded from cache.")
+		log.print(level: .verbose, "\(allEvents.count - countBeforeCache) events loaded from cache.")
 	}
 }
 
@@ -73,13 +76,13 @@ func writeCache() {
 	guard let writeResult = cache?.write(events: allEvents) else { return }
 	
 	guard case .success = writeResult else {
-		print("")
-		print("error trying to write cache data")
-		print("")
+		log.print("")
+		log.print("error trying to write cache data")
+		log.print("")
 		return
 	}
 	
-	print("\(allEvents.count) events written to the cache.")
+	log.print(level: .verbose, "\(allEvents.count) events written to the cache.")
 }
 
 func requestDataFromGitHub() {
@@ -107,7 +110,7 @@ func handle(events result: NetworkResult<Data>) {
 
 	guard case let .success(response) = result,
 		let httpResponse = response.urlResponse as? HTTPURLResponse else {
-			print("Failed to retrieve events from GitHub.")
+			log.print("Failed to retrieve events from GitHub.")
 			return
 	}
 	
@@ -119,7 +122,7 @@ func handle(events result: NetworkResult<Data>) {
 
                 nextLink = linkHeaders.links.first { $0.name == "next" }?.url
             } catch {
-                print("GitHub returned invalid link URLs in headers")
+                log.print("GitHub returned invalid link URLs in headers")
                 nextLink = nil
             }
     } else {
@@ -127,7 +130,7 @@ func handle(events result: NetworkResult<Data>) {
     }
 
     if inputs[\.printJSON] {
-        print(String(data: response.data, encoding: .utf8)!)
+        log.print(String(data: response.data, encoding: .utf8)!)
     }
 
     let decoder = JSONDecoder()
@@ -146,7 +149,7 @@ func handle(events result: NetworkResult<Data>) {
 		Network.request(request, completion: handle(events:))
 
     } catch {
-        print("error trying to convert events data to JSON")
+        log.print("error trying to convert events data to JSON")
     }
 }
 
@@ -165,7 +168,7 @@ func handle(stats result: NetworkResult<Data>, withRetryOn repository: String) {
                 ).responseData(completionHandler: { handle(stats: $0, repository: repository) })
         }
 #else
-        print("GitHub needs to process stats for \(repository). Run script again in a few minutes.")
+        log.print("GitHub needs to process stats for \(repository). Run script again in a few minutes.")
 #endif
         return
     }
@@ -176,12 +179,12 @@ func handle(stats result: NetworkResult<Data>, withRetryOn repository: String) {
 func handle(stats result: NetworkResult<Data>, repository: String) {
 
     guard case let .success(response) = result else {
-        print("Failed to get valid stats response from GitHub")
+        log.print("Failed to get valid stats response from GitHub")
         return
     }
 
     if inputs[\.printJSON] {
-        print(String(data: response.data, encoding: .utf8)!)
+        log.print(String(data: response.data, encoding: .utf8)!)
     }
 
     let decoder = JSONDecoder()
@@ -193,7 +196,7 @@ func handle(stats result: NetworkResult<Data>, repository: String) {
         allStats = Set(newStats.map{ RepoContributor(repository: repository, contributor: $0) }).union(allStats)
 
     } catch {
-        print("error trying to convert stats data to JSON")
+        log.print("error trying to convert stats data to JSON")
     }
 }
 
@@ -204,15 +207,15 @@ func applyFilters() {
 	// being analyzed this time.
     allEvents = allEvents.filter { $0.data.repositoryNames.map(filters.repositories).contains(true) }
 
-    print("\(allEvents.count) events across repositories: \(inputs[\.repositories].joined(separator: ", "))")
-    print("\(allStats.count) (user, repository) pairings.")
+	log.print(level: .verbose, "\(allEvents.count) events across repositories: \(inputs[\.repositories].joined(separator: ", "))")
+	log.print(level: .verbose, "\(allStats.count) (user, repository) pairings.")
 
     if let earliestDate = inputs[\.earliestDate] {
 
         // weed out all events earlier than earliest date
 		allEvents = allEvents.filter { filters.earliestDate($0.createdAt) }
 
-        print("    \(allEvents.count) events were newer than \(earliestDate)")
+		log.print(level: .verbose, "    \(allEvents.count) events were newer than \(earliestDate)")
 
         // weed out all (user, repository) pairings earlier than earliest date
         allStats = Set(allStats.map { contributor in
@@ -228,7 +231,7 @@ func applyFilters() {
 		// weed out all events later than latest date
 		allEvents = allEvents.filter { filters.latestDate($0.createdAt) }
 		
-		print("    \(allEvents.count) events were older than \(latestDate)")
+		log.print(level: .verbose, "    \(allEvents.count) events were older than \(latestDate)")
 		
 		// weed out all (user, repository) pairings later than latest date
 		allStats = Set(allStats.map { contributor in
@@ -243,24 +246,28 @@ func applyFilters() {
         // weed out all events for users not in the filter
         allEvents = allEvents.filter { $0.data.userLogin.map(filters.users) ?? true }
 
-        print("    \(allEvents.count) events aftering filtering to: \(users)")
+		log.print(level: .verbose, "    \(allEvents.count) events aftering filtering to: \(users)")
 
         // weed out all the contributions for users not in the filter
         allStats = allStats.filter { filters.users($0.contributor.author.login) }
 
-        print("     \(allStats.count) (user, repository) pairings after filtering out users.")
+		log.print(level: .verbose, "     \(allStats.count) (user, repository) pairings after filtering out users.")
     }
 }
 
 func startAnalysis() {
-    print("")
     let timeSortedEvents = allEvents.sorted { $0.createdAt < $1.createdAt }
-    timeSortedEvents.first.map { print("Earliest event: \($0.createdAt)") }
-    timeSortedEvents.last.map { print("Latest event: \($0.createdAt)") }
-    print("")
+	if let earliest = timeSortedEvents.first {
+		log.print(level: .verbose, "")
+		log.print(level: .verbose, "Earliest event: \(earliest.createdAt)")
+	}
+    if let latest = timeSortedEvents.last {
+		log.print(level: .verbose, "Latest event: \(latest.createdAt)")
+		log.print(level: .verbose, "")
+	}
     let orgStats = aggregateStats(from: (events: Array(allEvents), gitStats: Array(allStats)), ownedBy: inputs[\.repositoryOwner])
 
-    print("")
+    log.print("")
 
 	let table = StatTable(orgStat: orgStats,
 						  laterThan: inputs[\.earliestDate],
@@ -272,21 +279,21 @@ func startAnalysis() {
 	
 	for column in table.columnStack {
 		for idx in 0..<max(column.0.count, column.1.count) {
-			print("\(fillIfBlank(idx: idx, in: column.0)): \(fillIfBlank(idx: idx, in: column.1))")
+			log.print("\(fillIfBlank(idx: idx, in: column.0)): \(fillIfBlank(idx: idx, in: column.1))")
 		}
-		print("")
+		log.print("")
 	}
 
     if inputs[\.outputCSV] {
-        print("")
-        print("Writing CSV file to github_analysis.csv...")
+		log.print(level: .verbose, "")
+		log.print(level: .verbose, "Writing CSV file to github_analysis.csv...")
         let csvUrl = URL(fileURLWithPath: currentDirectory).appendingPathComponent("github_analysis").appendingPathExtension("csv")
         do {
             try table.csvString.data(using: .utf8)?.write(to: csvUrl)
         } catch {
-            print("Failed to write CSV File at: \(csvUrl.absoluteString)")
+            log.print("Failed to write CSV File at: \(csvUrl.absoluteString)")
         }
-		print("Done writing CSV file.")
+		log.print(level: .verbose, "Done writing CSV file.")
     }
 }
 
