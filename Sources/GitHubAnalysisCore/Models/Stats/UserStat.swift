@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct UserStat {
+public struct UserStat: Equatable {
     public let pullRequestStat: PullRequest
     public let codeStat: Code
     public let earliestEvent: Date? // needs to be optional rather than defaulting to distant future.
@@ -32,22 +32,34 @@ public extension UserStat {
 }
 
 public extension UserStat {
-    func with(_ prStat: PullRequest) -> UserStat {
+	/// Returns the result of replacing this UserStat's PullRequestStat with
+	/// the given one.
+    func replacing(_ prStat: PullRequest) -> UserStat {
         return UserStat(pullRequestStat: prStat, codeStat: codeStat, earliestEvent: earliestEvent)
     }
 
-    func with(_ codeStat: Code) -> UserStat {
+	/// Returns the result of replacing this UserStat's CodeStat with the
+	/// given one.
+    func replacing(_ codeStat: Code) -> UserStat {
         return UserStat(pullRequestStat: pullRequestStat, codeStat: codeStat, earliestEvent: earliestEvent)
     }
 
+	/// Returns the result of adding the given PullRequestStat to this UserStat.
     func adding(_ prStat: PullRequest) -> UserStat {
         return UserStat(pullRequestStat: pullRequestStat + prStat, codeStat: codeStat, earliestEvent: earliestEvent)
     }
 
+	/// Returns the result of adding the given CodeStat to this UserStat.
     func adding(_ codeStat: Code) -> UserStat {
         return UserStat(pullRequestStat: pullRequestStat, codeStat: self.codeStat + codeStat, earliestEvent: earliestEvent)
     }
 
+	/// Returns the result of updating the earliest event date for this
+	/// UserStat given the new event date. This means that if the given
+	/// date is earlier than this UserStat's current earliestEvent then
+	/// the returned UserStat will have the new event date as its
+	/// earliestEvent. Otherwise, the returned UserStat will be equal to
+	/// this UserStat.
     func updating(earliestEvent: Date) -> UserStat {
 		return UserStat(pullRequestStat: pullRequestStat, codeStat: codeStat, earliestEvent: self.earliestEvent.map { min(earliestEvent, $0) } ?? earliestEvent)
     }
@@ -71,7 +83,7 @@ public extension UserStat {
     }
 }
 
-public struct PullRequestStat {
+public struct PullRequestStat: Equatable {
 	/// Limited because calculated using events API.
 	public let opened: LimitedStat<Int>
 	
@@ -101,11 +113,12 @@ public struct PullRequestStat {
 	}
 }
 
-public struct CodeStat {
+public struct CodeStat: Equatable {
 	public let linesAdded: LimitlessStat<Int>
 	public let linesDeleted: LimitlessStat<Int>
 	public let commits: LimitlessStat<Int>
 	
+	/// The total lines affected (i.e. both added and deleted).
 	public var lines: LimitlessStat<Int> {
 		return zip(linesAdded, linesDeleted) { $0 + $1 }
 	}

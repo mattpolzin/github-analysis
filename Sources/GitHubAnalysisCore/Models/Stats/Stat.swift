@@ -38,6 +38,8 @@ public struct BasicStat<B: Bound, Wrapped: CustomStringConvertible>: Stat {
 	}
 }
 
+extension BasicStat: Equatable where Wrapped: Equatable {}
+
 public typealias LimitedStat<Type: CustomStringConvertible> = BasicStat<Limited, Type>
 public typealias LimitlessStat<Type: CustomStringConvertible> = BasicStat<Limitless, Type>
 
@@ -106,10 +108,21 @@ extension BasicStat where Wrapped: RandomAccessCollection {
 	}
 }
 
-extension Array {
+extension Sequence {
 	public func reduce<B: Bound, T: CustomStringConvertible, U: CustomStringConvertible>(_ initialResult: BasicStat<B, T>,
-																				  _ nextPartialResult: (T, U) -> T) -> BasicStat<B, T> where Element == BasicStat<B, U> {
+																				  _ nextPartialResult: (T, U) -> T) -> BasicStat<B, T> where Element == U {
+		return reduce(initialResult) { res, next in res.map { nextPartialResult($0, next) } }
+	}
+	
+	public func reduce<B: Bound, T: CustomStringConvertible, U: CustomStringConvertible>(_ initialResult: BasicStat<B, T>,
+																						 _ nextPartialResult: (T, U) -> T) -> BasicStat<B, T> where Element == BasicStat<B, U> {
 		return reduce(initialResult) { res, next in zip(res, next, with: nextPartialResult) }
+	}
+}
+
+extension BasicStat where Wrapped: Sequence, Wrapped.Element: CustomStringConvertible {
+	public func reduce<T: CustomStringConvertible>(_ initialResult: BasicStat<B, T>, _ nextPartialResult: (T, Wrapped.Element) -> T) -> BasicStat<B, T> {
+		return value.reduce(initialResult, nextPartialResult)
 	}
 }
 

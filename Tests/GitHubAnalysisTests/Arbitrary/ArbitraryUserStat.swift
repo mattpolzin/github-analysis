@@ -12,10 +12,35 @@ import GitHubAnalysisCore
 extension UserStat.PullRequest: Arbitrary {
 	public static var arbitrary: Gen<UserStat.PullRequest> {
 		return Gen.compose { c in
-			return UserStat.PullRequest(opened: c.generate(),
-									 closed: c.generate(),
-									 openLengths: c.generate(),
-									 commentEvents: c.generate())
+			let opened = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.generate
+			let closed = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.generate
+			
+			let numberOpenLengths = Gen
+				.fromElements(in: 0...min(opened, closed))
+				.generate
+			
+			let openLengths: [TimeInterval] = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.map { Double($0) }
+				.proliferate(withSize: numberOpenLengths)
+				.generate
+			
+			let commentEvents = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.generate
+			
+			return UserStat.PullRequest(opened: opened,
+										closed: closed,
+										openLengths: openLengths,
+										commentEvents: commentEvents)
 		}
 	}
 }
@@ -23,9 +48,21 @@ extension UserStat.PullRequest: Arbitrary {
 extension UserStat.Code: Arbitrary {
 	public static var arbitrary: Gen<UserStat.Code> {
 		return Gen.compose { c in
-			return UserStat.Code(linesAdded: c.generate(),
-									 linesDeleted: c.generate(),
-									 commits: c.generate())
+			let linesAdded = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.generate
+			let linesDeleted = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.generate
+			let commits = Positive<Int>
+				.arbitrary
+				.map { $0.getPositive }
+				.generate
+			return UserStat.Code(linesAdded: linesAdded,
+								 linesDeleted: linesDeleted,
+								 commits: commits)
 		}
 	}
 }
@@ -35,8 +72,8 @@ extension UserStat: Arbitrary {
 		return Gen.compose { c in
 			let earliestDate: Date? = c.generate()
 			let userStat = UserStat()
-				.with(c.generate() as Code)
-				.with(c.generate() as PullRequest)
+				.replacing(c.generate() as Code)
+				.replacing(c.generate() as PullRequest)
 			return earliestDate.map { userStat.updating(earliestEvent: $0) } ?? userStat
 		}
 	}
@@ -44,7 +81,7 @@ extension UserStat: Arbitrary {
 	public static var arbitraryWithNoEvents: Gen<UserStat> {
 		return Gen.compose { c in
 			// user with no events will not have PullRequestStats or an earliestDate
-			return UserStat().with(c.generate() as Code)
+			return UserStat().replacing(c.generate() as Code)
 		}
 	}
 }
