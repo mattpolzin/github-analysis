@@ -61,7 +61,7 @@ extension UserStatTests {
         ("test_AddingPullRequestStatsToUserStat", test_AddingPullRequestStatsToUserStat),
         ("test_AddingPullRequestStatsToUserStatMutating", test_AddingPullRequestStatsToUserStatMutating),
         ("test_AddingPullRequestToEmptyUserStat", test_AddingPullRequestToEmptyUserStat),
-        ("test_AddingUserStatComponentsMutating", test_AddingUserStatComponentsMutating),
+        ("test_AddingUserStatComponentsMutatingEqualsNonMutating", test_AddingUserStatComponentsMutatingEqualsNonMutating),
         ("test_AddingUserStatsAddsComponents", test_AddingUserStatsAddsComponents),
         ("test_ReplacingCodeStatsOnUserStat", test_ReplacingCodeStatsOnUserStat),
         ("test_ReplacingPullRequestStatsOnUserStat", test_ReplacingPullRequestStatsOnUserStat),
