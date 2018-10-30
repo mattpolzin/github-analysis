@@ -23,7 +23,7 @@ class UserStatTests: XCTestCase {
 		property("Pull Request stat component of user stat equals pull request stat that was added to empty user stat") <- forAll { (prStat: PullRequestStat) in
 			let userStat = UserStat().adding(prStat)
 			
-			return userStat.pullRequestStat == prStat && userStat.codeStat == CodeStat.empty
+			return userStat.pullRequestStat == prStat && userStat.codeStat == CodeStat.empty && userStat.earliestEvent == nil
 		}
 	}
 	
@@ -31,7 +31,7 @@ class UserStatTests: XCTestCase {
 		property("Code stat component of user stat equals code stat that was added to empty user stat") <- forAll { (codeStat: CodeStat) in
 			let userStat = UserStat().adding(codeStat)
 			
-			return userStat.codeStat == codeStat && userStat.pullRequestStat == PullRequestStat.empty
+			return userStat.codeStat == codeStat && userStat.pullRequestStat == PullRequestStat.empty && userStat.earliestEvent == nil
 		}
 	}
 	
@@ -81,7 +81,14 @@ class UserStatTests: XCTestCase {
 		}
 	}
 	
-	func test_AddingUserStatComponentsMutating() {
-		// TODO (i.e. +=)
+	func test_AddingUserStatComponentsMutatingEqualsNonMutating() {
+		property("A UserStat mutated by adding another to it equals the result of the non-mutating addition of the two user stats.") <- forAll { (userStat1: UserStat) in
+			return forAll { (userStat2: UserStat) in
+				var userStat3 = userStat1
+				userStat3 += userStat2
+
+				return userStat3 == userStat1 + userStat2
+			}
+		}
 	}
 }

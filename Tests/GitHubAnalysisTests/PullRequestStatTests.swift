@@ -58,11 +58,24 @@ class PullRequestStatTests: XCTestCase {
 	}
 	
 	func test_OpenedPullRequestStat() {
-		// TODO
+		let opened = PullRequestStat.opened
+		
+		XCTAssertEqual(opened.avgOpenLength, 0)
+		XCTAssertEqual(opened.closed, 0)
+		XCTAssertEqual(opened.commentEvents, 0)
+		XCTAssertEqual(opened.opened, 1)
+		XCTAssertEqual(opened.openLengths, [])
 	}
 	
 	func test_ClosedPullRequestStatNoOpenTime() {
-		// TODO
+		let date = Date()
+		let closed = PullRequestStat.closed(at: date)
+		
+		XCTAssertEqual(closed.avgOpenLength, 0)
+		XCTAssertEqual(closed.closed, 1)
+		XCTAssertEqual(closed.commentEvents, 0)
+		XCTAssertEqual(closed.opened, 0)
+		XCTAssertEqual(closed.openLengths, [])
 	}
 	
 	func test_ClosedPullRequestStatWithOpenTime() {
@@ -79,6 +92,12 @@ class PullRequestStatTests: XCTestCase {
 	}
 	
 	func test_CommentedPullRequestStat() {
-		// TODO
+		let commented = PullRequestStat.commented
+		
+		XCTAssertEqual(commented.avgOpenLength, 0)
+		XCTAssertEqual(commented.closed, 0)
+		XCTAssertEqual(commented.commentEvents, 1)
+		XCTAssertEqual(commented.opened, 0)
+		XCTAssertEqual(commented.openLengths, [])
 	}
 }
