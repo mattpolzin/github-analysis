@@ -67,6 +67,7 @@ extension UserStatTests {
         ("test_ReplacingPullRequestStatsOnUserStat", test_ReplacingPullRequestStatsOnUserStat),
         ("test_UpdatingEarliestEventOfEmptyUserStat", test_UpdatingEarliestEventOfEmptyUserStat),
         ("test_UpdatingEarliestEventOfUserStat", test_UpdatingEarliestEventOfUserStat),
+        ("test_UpdatingEarliestEventOfUserStatMutating", test_UpdatingEarliestEventOfUserStatMutating),
         ("test_UserStatStartsEmpty", test_UserStatStartsEmpty),
     ]
 }
