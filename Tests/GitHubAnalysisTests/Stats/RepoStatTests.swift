@@ -53,10 +53,25 @@ extension RepoStatTests {
 			return prStat.openLengths.total.value == allOpenLengths
 		}
 		
-		property("open length avg is average per user") <- forAll { (prStats: [PullRequestStat]) in
+		property("open length user avg is average per user") <- forAll { (prStats: [PullRequestStat]) in
 			let prStat = RepoStat.PullRequest(prStats: prStats)
 			let avgPerUser = prStats.map { $0.avgOpenLength }.reduce(0) { $0 + Double($1)/Double(prStats.count) }
-			return prStat.openLengths.average == avgPerUser
+			return prStat.openLengths.average.perUser == avgPerUser
+		}
+		
+		property("open length pr avg is average per pull request") <- forAll { (prStats: [PullRequestStat]) in
+			let prStat = RepoStat.PullRequest(prStats: prStats)
+			let allOpenLengths = prStats.map { $0.openLengths }.reduce([], +)
+			let avgPerPR = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
+			return prStat.openLengths.average.perPullRequest == avgPerPR
+		}
+		
+		// This test kind of checks both the arbitrariness of RepoStat.PullRequest and
+		// also the logic of these tests. There IS a difference between the definition of
+		// avg open length per user and avg open length per pull request, so we verify that
+		// fact here.
+		property("open length pr avg is not always equal to open length user avg") <- exists { (prStat: RepoStat.PullRequest) in
+			return prStat.openLengths.average.perPullRequest != prStat.openLengths.average.perUser
 		}
 	}
 }

@@ -38,7 +38,7 @@ public extension RepoStat {
 	
 	public struct PullRequest {
 		/// Average is given in seconds
-		public let openLengths: AggregateLimitedStat<[TimeInterval], Double>
+		public let openLengths: SumAndAvg<LimitedStat<[TimeInterval]>, (perPullRequest: LimitedStat<Double>, perUser: LimitedStat<Double>)>
 		
 		public let opened: AggregateLimitedStat<Int, Double>
 		
@@ -61,17 +61,15 @@ public extension RepoStat {
 extension RepoStat.PullRequest {
 	init(prStats: [UserStat.PullRequest]) {
 		let openLengthsArr = prStats.map { $0.openLengths }.reduce([], +)
+		let userAvgOpenLength = prStats.map { $0.avgOpenLength }.reduce(0) { $0 + Double($1)/Double(prStats.count) }
+		let prAvgOpenLength = openLengthsArr.reduce(0) { $0 + Double($1)/Double(openLengthsArr.count) }
 		
 		/// open lengths is a bit different than other metrics because
 		/// total open length is not very useful, so the total
 		/// is actually an array containing all open legnths.
-		/// The average given is not the average of all open lengths but
-		/// rather the average per user. In other words, it is the average
-		/// of all user averages rather than the average of all pull requests.
-		/// The two averages are different any time not all users have the
-		/// same number of open lengths.
 		openLengths = (total: openLengthsArr,
-					   average: prStats.map { $0.avgOpenLength }.reduce(0) { $0 + Double($1)/Double(prStats.count) })
+					   average: (perPullRequest: prAvgOpenLength,
+								 perUser: userAvgOpenLength))
 		
 		opened = aggregateSumAndAvg(prStats.map { $0.opened })
 		

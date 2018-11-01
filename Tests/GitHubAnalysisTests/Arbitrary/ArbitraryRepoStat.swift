@@ -17,3 +17,19 @@ extension RepoStat: Arbitrary {
 		}
 	}
 }
+
+extension RepoStat.PullRequest: Arbitrary {
+	public static var arbitrary: Gen<RepoStat.PullRequest> {
+		return Gen.compose { c in
+			return RepoStat.PullRequest(prStats: c.generate())
+		}
+	}
+}
+
+extension RepoStat.Code: Arbitrary {
+	public static var arbitrary: Gen<RepoStat.Code> {
+		return Gen.compose { c in
+			return RepoStat.Code(codeStats: c.generate())
+		}
+	}
+}
