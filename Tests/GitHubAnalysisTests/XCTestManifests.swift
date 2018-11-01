@@ -32,6 +32,7 @@ extension PullRequestStatTests {
 
 extension RepoStatTests {
     static let __allTests = [
+        ("test_RepoStatPullRequestOpenLengths", test_RepoStatPullRequestOpenLengths),
         ("testEarliestEvent_AllUsersNoEvents", testEarliestEvent_AllUsersNoEvents),
         ("testEarliestEvent_NoUsers", testEarliestEvent_NoUsers),
         ("testEarliestEvent_OneOrMoreUsers", testEarliestEvent_OneOrMoreUsers),
