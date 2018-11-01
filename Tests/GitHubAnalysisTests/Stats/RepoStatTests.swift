@@ -42,3 +42,26 @@ class RepoStatTests: XCTestCase {
 		}
 	}
 }
+
+// MARK: RepoStat.PullRequest
+extension RepoStatTests {
+	// all RepoStat.PullRequest properties except for `openLengths` are aggregateSumAndAvg which is tested elsewhere
+	func test_RepoStatPullRequestOpenLengths() {
+		property("open length total is array containing all open legnths") <- forAll { (prStats: [PullRequestStat]) in
+			let prStat = RepoStat.PullRequest(prStats: prStats)
+			let allOpenLengths = prStats.flatMap { $0.openLengths.value }
+			return prStat.openLengths.total.value == allOpenLengths
+		}
+		
+		property("open length avg is average per user") <- forAll { (prStats: [PullRequestStat]) in
+			let prStat = RepoStat.PullRequest(prStats: prStats)
+			let avgPerUser = prStats.map { $0.avgOpenLength }.reduce(0) { $0 + Double($1)/Double(prStats.count) }
+			return prStat.openLengths.average == avgPerUser
+		}
+	}
+}
+
+// MARK: RepoStat.Code
+extension RepoStatTests {
+	// all RepoStat.Code properties are aggregateSumAndAvg which is tested elsewhere
+}

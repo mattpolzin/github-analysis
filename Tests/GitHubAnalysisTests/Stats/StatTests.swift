@@ -32,7 +32,7 @@ class StatTests: XCTestCase {
 	}
 	
 	func test_aggregateAvg() {
-		property("avg of ints aggregated is accurate", arguments: .init(replay: (StdGen.init(677045031, 13744243), 0))) <- forAll { (ints: [Int]) in
+		property("avg of ints aggregated is accurate") <- forAll { (ints: [Int]) in
 			let average = ints.reduce(0) { $0 + Double($1) / Double(ints.count) }
 			let stats1 = ints.map(LimitedStat.init(value:))
 			let stats2 = ints.map(LimitlessStat.init(value:))

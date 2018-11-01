@@ -30,30 +30,26 @@ class PullRequestStatTests: XCTestCase {
 	}
 	
 	func test_PullRequestStatsAddTogetherCorrectly() {
-		property("The components of two PullRequestStats added together are equal to the components added separately.") <- forAll { (prStat1: PullRequestStat) in
-			return forAll { (prStat2: PullRequestStat) in
-				let prStat3 = prStat1 + prStat2
-				let allOpenLengths = prStat1.openLengths + prStat2.openLengths
-				let avg = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
-				let tests = [
-					prStat3.avgOpenLength.value ~== avg.value,
-					prStat3.closed == prStat1.closed + prStat2.closed,
-					prStat3.commentEvents == prStat1.commentEvents + prStat2.commentEvents,
-					prStat3.opened == prStat1.opened + prStat2.opened,
-					prStat3.openLengths == prStat1.openLengths + prStat2.openLengths,
-				]
-				return !tests.contains(false)
-			}
+		property("The components of two PullRequestStats added together are equal to the components added separately.") <- forAll { (prStat1: PullRequestStat, prStat2: PullRequestStat) in
+			let prStat3 = prStat1 + prStat2
+			let allOpenLengths = prStat1.openLengths + prStat2.openLengths
+			let avg = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
+			let tests = [
+				prStat3.avgOpenLength.value ~== avg.value,
+				prStat3.closed == prStat1.closed + prStat2.closed,
+				prStat3.commentEvents == prStat1.commentEvents + prStat2.commentEvents,
+				prStat3.opened == prStat1.opened + prStat2.opened,
+				prStat3.openLengths == prStat1.openLengths + prStat2.openLengths,
+			]
+			return !tests.contains(false)
 		}
 	}
 	
 	func test_PullRequestStatMutatingAdditionEqualsNonMutatingAddition() {
-		property("Mutating a pull request stat by adding another one to it is equivalent to adding two pull request stats together.") <- forAll { (prStat1: PullRequestStat) in
-			return forAll { (prStat2: PullRequestStat) in
-				var prStat3 = prStat1
-				prStat3 += prStat2
-				return prStat3 == prStat1 + prStat2
-			}
+		property("Mutating a pull request stat by adding another one to it is equivalent to adding two pull request stats together.") <- forAll { (prStat1: PullRequestStat, prStat2: PullRequestStat) in
+			var prStat3 = prStat1
+			prStat3 += prStat2
+			return prStat3 == prStat1 + prStat2
 		}
 	}
 	
