@@ -12,13 +12,13 @@ import GitHubAnalysisCore
 extension UserStat.PullRequest: Arbitrary {
 	public static var arbitrary: Gen<UserStat.PullRequest> {
 		return Gen.compose { c in
-			let opened = Positive<Int>
+			let opened = NonNegative<Int>
 				.arbitrary
-				.map { $0.getPositive }
+				.map { $0.getNonNegative }
 				.generate
-			let closed = Positive<Int>
+			let closed = NonNegative<Int>
 				.arbitrary
-				.map { $0.getPositive }
+				.map { $0.getNonNegative }
 				.generate
 			
 			let numberOpenLengths = Gen
@@ -32,9 +32,9 @@ extension UserStat.PullRequest: Arbitrary {
 				.proliferate(withSize: numberOpenLengths)
 				.generate
 			
-			let commentEvents = Positive<Int>
+			let commentEvents = NonNegative<Int>
 				.arbitrary
-				.map { $0.getPositive }
+				.map { $0.getNonNegative }
 				.generate
 			
 			return UserStat.PullRequest(opened: opened,
@@ -48,17 +48,20 @@ extension UserStat.PullRequest: Arbitrary {
 extension UserStat.Code: Arbitrary {
 	public static var arbitrary: Gen<UserStat.Code> {
 		return Gen.compose { c in
-			let linesAdded = Positive<Int>
+			let linesAdded = NonNegative<Int>
 				.arbitrary
-				.map { $0.getPositive }
+				.map { $0.getNonNegative }
 				.generate
-			let linesDeleted = Positive<Int>
+			let linesDeleted = NonNegative<Int>
 				.arbitrary
-				.map { $0.getPositive }
+				.map { $0.getNonNegative }
 				.generate
-			let commits = Positive<Int>
-				.arbitrary
-				.map { $0.getPositive }
+			
+			// just pick an arbitrarily large number without getting too close to Int.max
+			// because we shouldn't realistically have to worry about buffer overflow with this
+			// value
+			let commits = Gen
+				.fromElements(in: min(linesAdded, linesDeleted)...999999999)
 				.generate
 			return UserStat.Code(linesAdded: linesAdded,
 								 linesDeleted: linesDeleted,
@@ -71,9 +74,15 @@ extension UserStat: Arbitrary {
 	public static var arbitrary: Gen<UserStat> {
 		return Gen.compose { c in
 			let earliestDate: Date? = c.generate()
-			let userStat = UserStat()
-				.replacing(c.generate() as Code)
-				.replacing(c.generate() as PullRequest)
+			
+			let userStat: UserStat
+			if earliestDate == nil {
+				userStat = arbitraryWithNoEvents.generate
+			} else {
+				userStat = UserStat()
+					.replacing(c.generate() as Code)
+					.replacing(c.generate() as PullRequest)
+			}
 			return earliestDate.map { userStat.updating(earliestEvent: $0) } ?? userStat
 		}
 	}

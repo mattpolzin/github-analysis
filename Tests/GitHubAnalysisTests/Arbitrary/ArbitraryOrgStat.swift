@@ -21,7 +21,9 @@ extension OrgStat: Arbitrary {
 extension OrgStat.PullRequest: Arbitrary {
 	public static var arbitrary: Gen<OrgStat.PullRequest> {
 		return Gen.compose { c in
-			return OrgStat.PullRequest(repoPrStats: c.generate(), userPrStats: c.generate(using: UserStat.PullRequest.arbitrary.proliferateNonEmpty))
+			let userPrStats = [UserStat.PullRequest].arbitrary.proliferate.generate
+			let repoPrStats = userPrStats.map { RepoStat.PullRequest(prStats: $0) }
+			return OrgStat.PullRequest(repoPrStats: repoPrStats, userPrStats: userPrStats.flatMap { $0 })
 		}
 	}
 }
@@ -29,7 +31,9 @@ extension OrgStat.PullRequest: Arbitrary {
 extension OrgStat.Code: Arbitrary {
 	public static var arbitrary: Gen<OrgStat.Code> {
 		return Gen.compose { c in
-			return OrgStat.Code(codeStats: c.generate(), numberOfUsers: c.generate(using: Positive<Int>.arbitrary.map { $0.getPositive }))
+			let userCodeStats = [UserStat.Code].arbitrary.proliferate.generate
+			let repoCodeStats = userCodeStats.map { RepoStat.Code(codeStats: $0) }
+			return OrgStat.Code(codeStats: repoCodeStats, numberOfUsers: userCodeStats.flatMap { $0 }.count)
 		}
 	}
 }
