@@ -31,7 +31,7 @@ public struct OrgStat {
 		userStats = users
 		
 		pullRequestStats = .init(repoPrStats: repoStats.values.map { $0.pullRequestStats },
-								 numberOfUsers: userStats.count)
+			userPrStats: userStats.values.map { $0.pullRequestStat })
 		codeStats = .init(codeStats: repoStats.values.map { $0.codeStats },
 						  numberOfUsers: userStats.count)
 	}
@@ -73,7 +73,8 @@ public struct OrgStat {
 	/// possible the window is farther back that the GitHub API will provide
 	/// events and there are no relevant events locally cached either.
 	public var unreliableRepositories: [RepositoryName] {
-		return repoStats.compactMap { $0.value.userStats.compactMap { $0.value.earliestEvent }.isEmpty ? $0.key : nil }
+		return repoStats
+			.compactMap { $0.value.userStats.compactMap { $0.value.earliestEvent }.isEmpty ? $0.key : nil }
 	}
 	
 //	public typealias PullRequest = AggregatePullRequestStat
@@ -94,11 +95,21 @@ public extension OrgStat {
 		
 		public let comments: StatAggregate<Limited, Int>
 		
-		init(repoPrStats: [RepoStat.PullRequest], numberOfUsers: Int) {
+		init(repoPrStats: [RepoStat.PullRequest], userPrStats: [UserStat.PullRequest]) {
+			let numberOfUsers = userPrStats.count
+			
 			let allOpenLengths = repoPrStats.map { $0.openLengths.total }.reduce([], +)
-			let prAvgOpenLength = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
-			let userAvgOpenLength = repoPrStats.map { $0.openLengths.average.perPullRequest }.reduce(0) { $0 + Double($1)/Double(numberOfUsers) }
-			let repoAvgOpenLength = repoPrStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(repoPrStats.count) }
+			
+			let prAvgOpenLength = allOpenLengths
+				.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
+			
+			let userAvgOpenLength = userPrStats
+				.map { $0.avgOpenLength }
+				.reduce(0) { $0 + Double($1)/Double(numberOfUsers) }
+			
+			let repoAvgOpenLength = repoPrStats
+				.map { $0.openLengths.average.perUser }
+				.reduce(0) { $0 + Double($1)/Double(repoPrStats.count) }
 			
 			openLengths = (total: allOpenLengths,
 						   average: (perPullRequest: prAvgOpenLength,
@@ -135,7 +146,8 @@ public extension OrgStat {
 		}
 	}
 	
-	static func aggregate<B: Bound>(of repoStats: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>], numberOfUsers: Int) -> StatAggregate<B, Int> {
+	static func aggregate<B: Bound>(of repoStats: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>],
+									numberOfUsers: Int) -> StatAggregate<B, Int> {
 		let repo = aggregateSumAndAvg(repoStats.map { $0.total })
 		let userAvg = repo.total.map { Double($0) / Double(numberOfUsers) }
 		
