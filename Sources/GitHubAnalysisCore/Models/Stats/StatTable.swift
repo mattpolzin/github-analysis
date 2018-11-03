@@ -139,7 +139,7 @@ public struct StatTable {
         return .init(
             header: "Average PR open length (days)",
             total: "\\",
-            average: string(describing: orgStat.pullRequestStats.openLengths.average/(60 * 60 * 24)),
+            average: string(describing: orgStat.pullRequestStats.openLengths.average.perUser/(60 * 60 * 24)),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
         )
     }

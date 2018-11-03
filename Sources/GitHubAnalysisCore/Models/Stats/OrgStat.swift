@@ -30,8 +30,10 @@ public struct OrgStat {
 		
 		userStats = users
 		
-		pullRequestStats = .init(prStats: repoStats.values.map { $0.pullRequestStats })
-		codeStats = .init(codeStats: repoStats.values.map { $0.codeStats })
+		pullRequestStats = .init(repoPrStats: repoStats.values.map { $0.pullRequestStats },
+								 numberOfUsers: userStats.count)
+		codeStats = .init(codeStats: repoStats.values.map { $0.codeStats },
+						  numberOfUsers: userStats.count)
 	}
 
     public var earliestEvent: Date? {
@@ -84,7 +86,7 @@ public extension OrgStat {
 	
 	struct PullRequest {
 		/// Average is given in seconds
-		public let openLengths: SumAndAvg<LimitedStat<[TimeInterval]>, LimitedStat<Double>>
+		public let openLengths: SumAndAvg<LimitedStat<[TimeInterval]>, (perPullRequest: LimitedStat<Double>, perUser: LimitedStat<Double>, perRepo: LimitedStat<Double>)>
 		
 		public let opened: StatAggregate<Limited, Int>
 		
@@ -92,15 +94,23 @@ public extension OrgStat {
 		
 		public let comments: StatAggregate<Limited, Int>
 		
-		init(prStats: [RepoStat.PullRequest]) {
-			let allOpenLengths = prStats.map { $0.openLengths.total }.reduce([], +)
-			let avgOpenLength = allOpenLengths.map { $0.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) } }
+		init(repoPrStats: [RepoStat.PullRequest], numberOfUsers: Int) {
+			let allOpenLengths = repoPrStats.map { $0.openLengths.total }.reduce([], +)
+			let prAvgOpenLength = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
+			let userAvgOpenLength = repoPrStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(numberOfUsers) }
+			let repoAvgOpenLength = repoPrStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(repoPrStats.count) }
 			
-			openLengths = (total: allOpenLengths, average: avgOpenLength)
+			openLengths = (total: allOpenLengths,
+						   average: (perPullRequest: prAvgOpenLength,
+									 perUser: userAvgOpenLength,
+									 perRepo: repoAvgOpenLength))
 			
-			opened = OrgStat.aggregate(of: prStats.map { $0.opened })
-			closed = OrgStat.aggregate(of: prStats.map { $0.closed })
-			comments = OrgStat.aggregate(of: prStats.map { $0.comments })
+			opened = OrgStat.aggregate(of: repoPrStats.map { $0.opened },
+									   numberOfUsers: numberOfUsers)
+			closed = OrgStat.aggregate(of: repoPrStats.map { $0.closed },
+									   numberOfUsers: numberOfUsers)
+			comments = OrgStat.aggregate(of: repoPrStats.map { $0.comments },
+										 numberOfUsers: numberOfUsers)
 		}
 	}
 	
@@ -113,17 +123,21 @@ public extension OrgStat {
 		
 		public let commits: StatAggregate<Limitless, Int>
 		
-		init(codeStats: [RepoStat.Code]) {
-			linesAdded = OrgStat.aggregate(of: codeStats.map { $0.linesAdded })
-			linesDeleted = OrgStat.aggregate(of: codeStats.map { $0.linesDeleted })
-			lines = OrgStat.aggregate(of: codeStats.map { $0.lines })
-			commits = OrgStat.aggregate(of: codeStats.map { $0.commits })
+		init(codeStats: [RepoStat.Code], numberOfUsers: Int) {
+			linesAdded = OrgStat.aggregate(of: codeStats.map { $0.linesAdded },
+										   numberOfUsers: numberOfUsers)
+			linesDeleted = OrgStat.aggregate(of: codeStats.map { $0.linesDeleted },
+											 numberOfUsers: numberOfUsers)
+			lines = OrgStat.aggregate(of: codeStats.map { $0.lines },
+									  numberOfUsers: numberOfUsers)
+			commits = OrgStat.aggregate(of: codeStats.map { $0.commits },
+										numberOfUsers: numberOfUsers)
 		}
 	}
 	
-	private static func aggregate<B: Bound>(of input: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>]) -> StatAggregate<B, Int> {
-		let repo = aggregateSumAndAvg(input.map { $0.total })
-		let userAvg = aggregateSumAndAvg(input.map { $0.average }).average
+	static func aggregate<B: Bound>(of stats: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>], numberOfUsers: Int) -> StatAggregate<B, Int> {
+		let repo = aggregateSumAndAvg(stats.map { $0.total })
+		let userAvg = repo.total.map { Double($0) / Double(numberOfUsers) }
 		
 		return (total: repo.total, average: (perUser: userAvg, perRepo: repo.average))
 	}
