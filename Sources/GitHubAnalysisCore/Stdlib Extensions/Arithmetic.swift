@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 10/4/18.
 //
 
-import Foundation
-
 public protocol Addable {
 	static func +(lhs: Self, rhs: Self) -> Self
 }

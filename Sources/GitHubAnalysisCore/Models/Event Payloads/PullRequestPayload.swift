@@ -6,8 +6,6 @@
 //  Copyright © 2018 Mathew Polzin. All rights reserved.
 //
 
-import Foundation
-
 struct PullRequestPayload: Payload {
     let action: Action
     let number: Int

@@ -8,7 +8,7 @@
 
 import Foundation
 
-public enum EventType: String, CodingKey, Encodable {
+public enum EventType: String, CodingKey, Encodable, CaseIterable {
     case pullRequest = "PullRequestEvent"
     case pullRequestComment = "PullRequestReviewCommentEvent"
     case pullRequestReview = "PullRequestReviewEvent"
@@ -25,11 +25,6 @@ public enum EventType: String, CodingKey, Encodable {
         case .notTracked:
             return NotTrackedPayload.self
         }
-    }
-
-    // following not needed with Swift 4.2, just conform to CaseIterable
-    public static var allCases: [EventType] {
-        return [.pullRequest, .pullRequestComment, .pullRequestReview, .notTracked]
     }
 }
 

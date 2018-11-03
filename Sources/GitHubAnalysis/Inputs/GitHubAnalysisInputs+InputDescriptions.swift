@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 10/28/18.
 //
 
-import Foundation
-
 extension GitHubAnalysisInputs {
 	enum PersonalAccessTokenUsage: EnvironmentRule {
 		static var name: String { return kGithubAccessTokenVar }

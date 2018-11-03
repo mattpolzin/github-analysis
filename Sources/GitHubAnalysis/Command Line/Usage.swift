@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 9/30/18.
 //
 
-import Foundation
-
 protocol UsageRule {
 	static var description: String { get }
 }

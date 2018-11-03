@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 10/28/18.
 //
 
-import Foundation
-
 struct Log {
 	
 	let destination: Destination

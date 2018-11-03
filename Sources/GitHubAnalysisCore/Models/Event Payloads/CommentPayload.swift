@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 9/29/18.
 //
 
-import Foundation
-
 struct CommentPayload: Payload {
     let action: Action
     let comment: Comment

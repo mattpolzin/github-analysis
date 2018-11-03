@@ -5,7 +5,6 @@
 //  Created by Mathew Polzin on 10/7/18.
 //
 
-import Foundation
 @testable import GitHubAnalysisCore
 import SwiftCheck
 

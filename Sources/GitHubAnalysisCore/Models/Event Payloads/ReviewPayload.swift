@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 9/30/18.
 //
 
-import Foundation
-
 struct ReviewPayload: Payload {
     let action: Action
     let review: Review

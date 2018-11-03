@@ -5,8 +5,6 @@
 //  Created by Mathew Polzin on 10/23/18.
 //
 
-import Foundation
-
 protocol InputUsage {
 	static var usage: UsageRule.Type { get }
 }
