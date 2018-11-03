@@ -5,11 +5,13 @@
 ## Prerequisites & Dependencies
 You need Swift 4.2+ and Swift Tools 4.2+.
 
-Download Xcode, then install command line tools.
-
 You will also need a GitHub personal access token. Generate one at https://github.com/settings/tokens. This can be specified as an argument when executing `github-analysis`, but it is most convenient to set the `GITHUB_ANALYSIS_TOKEN` environment variable.
 
-At the moment you can only build GitHubAnalysis for platforms that Alamofire will build for, but in the future I will be removing that dependency so that the script can be run on Linux platforms as well.
+### OS X
+Download Xcode, then install command line tools.
+
+### Linux
+Download or build Swift 4.2 and the Foundation library.
 
 ### Package Dependencies
 These dependencies will be downloaded and linked against automatically by the Swift Package Manager.
