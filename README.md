@@ -1,6 +1,6 @@
 # GitHubAnalysis
 
-[![Build Status](https://app.bitrise.io/app/63709d66684c9cf8/status.svg?token=UlFvp2pSDajsPtGI7rVroA)](https://app.bitrise.io/app/63709d66684c9cf8)
+[![MIT license](http://img.shields.io/badge/license-MIT-lightgrey.svg)](http://opensource.org/licenses/MIT) [![Swift 4.2](http://img.shields.io/badge/Swift-4.2-blue.svg)](https://swift.org) [![Build Status](https://app.bitrise.io/app/63709d66684c9cf8/status.svg?token=UlFvp2pSDajsPtGI7rVroA)](https://app.bitrise.io/app/63709d66684c9cf8)
 
 ## Prerequisites & Dependencies
 You need Swift 4.2+ and Swift Tools 4.2+.
