@@ -28,7 +28,11 @@ class OrgStatTests: XCTestCase {
 	}
 	
 	func test_earliestEventIsEarliestEventOfAnyRepo() {
-		// TODO
+		property("earliest org event is earliest event of any repositories in the org") <- forAll { (repoStats: [String: RepoStat], orgName: String) in
+			let earliestEvent = repoStats.compactMap { $0.value.earliestEvent }.sorted(by: <).first
+			
+			return OrgStat(orgName: orgName, repoStats: repoStats).earliestEvent == earliestEvent
+		}
 	}
 	
 	func test_emptyReposAreUnreliableRepositories() {
