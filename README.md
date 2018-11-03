@@ -18,7 +18,7 @@ These dependencies will be downloaded and linked against automatically by the Sw
 2. SwiftCheck (only used by test targets)
 
 ## Building
-1. `swift package resolve`
+1. `swift package update`
 2. `swift build`
 
 ## Running
