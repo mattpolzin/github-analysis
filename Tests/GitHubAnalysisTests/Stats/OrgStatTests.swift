@@ -104,26 +104,26 @@ class OrgStatTests: XCTestCase {
 extension OrgStatTests {
 	// all OrgStat.PullRequest properties except for `openLengths` are OrgStat.aggregate() which is tested elsewhere
 	func test_OrgStatPullRequestOpenLengths() {
-		property("open length total is array containing all open legnths") <- forAll { (prStats: [RepoStat.PullRequest], numberOfUsers: Positive<Int>) in
-			let prStat = OrgStat.PullRequest(repoPrStats: prStats, numberOfUsers: numberOfUsers.getPositive)
+		property("open length total is array containing all open legnths") <- forAll { (prStats: [RepoStat.PullRequest], userPrStats: NonEmptyArbitraryArray<UserStat.PullRequest>) in
+			let prStat = OrgStat.PullRequest(repoPrStats: prStats, userPrStats: userPrStats.nonEmptyArray)
 			let allOpenLengths = prStats.flatMap { $0.openLengths.total.value }
 			return prStat.openLengths.total.value == allOpenLengths
 		}
 		
-		property("open length repo avg is average per repo") <- forAll { (prStats: [RepoStat.PullRequest], numberOfUsers: Positive<Int>) in
-			let prStat = OrgStat.PullRequest(repoPrStats: prStats, numberOfUsers: numberOfUsers.getPositive)
+		property("open length repo avg is average per repo") <- forAll { (prStats: [RepoStat.PullRequest], userPrStats: NonEmptyArbitraryArray<UserStat.PullRequest>) in
+			let prStat = OrgStat.PullRequest(repoPrStats: prStats, userPrStats: userPrStats.nonEmptyArray)
 			let avgPerRepo = prStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(prStats.count) }
 			return prStat.openLengths.average.perRepo == avgPerRepo
 		}
 		
-		property("open length user avg is average per user") <- forAll { (prStats: [RepoStat.PullRequest], numberOfUsers: Positive<Int>) in
-			let prStat = OrgStat.PullRequest(repoPrStats: prStats, numberOfUsers: numberOfUsers.getPositive)
-			let avgPerUser = prStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(numberOfUsers.getPositive) }
+		property("open length user avg is average per user") <- forAll { (prStats: [RepoStat.PullRequest], userPrStats: NonEmptyArbitraryArray<UserStat.PullRequest>) in
+			let prStat = OrgStat.PullRequest(repoPrStats: prStats, userPrStats: userPrStats.nonEmptyArray)
+			let avgPerUser = userPrStats.nonEmptyArray.map { $0.avgOpenLength }.reduce(0) { $0 + Double($1)/Double(userPrStats.nonEmptyArray.count) }
 			return prStat.openLengths.average.perUser == avgPerUser
 		}
 		
-		property("open length pr avg is average per pull request") <- forAll { (prStats: [RepoStat.PullRequest], numberOfUsers: Positive<Int>) in
-			let prStat = OrgStat.PullRequest(repoPrStats: prStats, numberOfUsers: numberOfUsers.getPositive)
+		property("open length pr avg is average per pull request") <- forAll { (prStats: [RepoStat.PullRequest], userPrStats: NonEmptyArbitraryArray<UserStat.PullRequest>) in
+			let prStat = OrgStat.PullRequest(repoPrStats: prStats, userPrStats: userPrStats.nonEmptyArray)
 			let allOpenLengths = prStats.map { $0.openLengths.total }.reduce([], +)
 			let avgPerPR = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
 			return prStat.openLengths.average.perPullRequest == avgPerPR

@@ -21,7 +21,7 @@ extension OrgStat: Arbitrary {
 extension OrgStat.PullRequest: Arbitrary {
 	public static var arbitrary: Gen<OrgStat.PullRequest> {
 		return Gen.compose { c in
-			return OrgStat.PullRequest(repoPrStats: c.generate(), numberOfUsers: c.generate(using: Positive<Int>.arbitrary.map { $0.getPositive }))
+			return OrgStat.PullRequest(repoPrStats: c.generate(), userPrStats: c.generate(using: UserStat.PullRequest.arbitrary.proliferateNonEmpty))
 		}
 	}
 }
