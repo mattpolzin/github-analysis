@@ -135,8 +135,8 @@ public extension OrgStat {
 		}
 	}
 	
-	static func aggregate<B: Bound>(of stats: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>], numberOfUsers: Int) -> StatAggregate<B, Int> {
-		let repo = aggregateSumAndAvg(stats.map { $0.total })
+	static func aggregate<B: Bound>(of repoStats: [SumAndAvg<BasicStat<B, Int>, BasicStat<B, Double>>], numberOfUsers: Int) -> StatAggregate<B, Int> {
+		let repo = aggregateSumAndAvg(repoStats.map { $0.total })
 		let userAvg = repo.total.map { Double($0) / Double(numberOfUsers) }
 		
 		return (total: repo.total, average: (perUser: userAvg, perRepo: repo.average))
