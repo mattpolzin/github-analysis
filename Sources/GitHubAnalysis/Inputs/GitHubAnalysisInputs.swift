@@ -22,6 +22,7 @@ struct GitHubAnalysisInputs {
 	let quiet: Input<Bool, QuietUsage>
 	let outputCSV: Input<Bool, OutputCSVUsage>
 	let printJSON: Input<Bool, PrintJSONUsage>
+	let skipRequests: Input<Bool, SkipRequestsUsage>
 	let skipAnalysis: Input<Bool, SkipAnalysisUsage>
 	let skipFootnotes: Input<Bool, SkipFootnotesUsage>
 	
@@ -36,6 +37,7 @@ struct GitHubAnalysisInputs {
 		 quiet: Bool,
 		 outputCSV: Bool,
 		 printJSON: Bool,
+		 skipRequests: Bool,
 		 skipAnalysis: Bool,
 		 skipFootnotes: Bool) {
 		
@@ -52,6 +54,7 @@ struct GitHubAnalysisInputs {
 		self.quiet = .init(value: quiet)
 		self.outputCSV = .init(value: outputCSV)
 		self.printJSON = .init(value: printJSON)
+		self.skipRequests = .init(value: skipRequests)
 		self.skipAnalysis = .init(value: skipAnalysis)
 		self.skipFootnotes = .init(value: skipFootnotes)
 	}
@@ -113,6 +116,8 @@ extension GitHubAnalysisInputs {
 		
 		let printJSON = inputs.isFlagSet(named: kPrintJSONFlag)
 		
+		let skipRequests = inputs.isFlagSet(named: kSkipRequestsFlag)
+		
 		let skipAnalysis = inputs.isFlagSet(named: kSkipAnalysisFlag)
 		
 		let skipFootnotes = inputs.isFlagSet(named: kSkipFootnotesFlag)
@@ -130,6 +135,7 @@ extension GitHubAnalysisInputs {
 											 quiet: quietFlag,
 											 outputCSV: outputCSVFlag,
 											 printJSON: printJSON,
+											 skipRequests: skipRequests,
 											 skipAnalysis: skipAnalysis,
 											 skipFootnotes: skipFootnotes))
 	}

@@ -306,12 +306,13 @@ func startAnalysis() {
 
 readCache()
 
-requestDataFromGitHub()
+if !inputs[\.skipRequests] {
+	requestDataFromGitHub()
+}
 
 // wait for requests to finish
 while Network.requestsInFlight > 0 &&
     runLoop.run(mode: runLoopMode, before: distantFuture) {
-//		print("Requests in flight: \(Network.requestsInFlight)")
 }
 
 writeCache()

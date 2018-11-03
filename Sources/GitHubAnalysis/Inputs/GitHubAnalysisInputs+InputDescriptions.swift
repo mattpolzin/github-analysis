@@ -79,6 +79,10 @@ extension GitHubAnalysisInputs {
 		static var name: String { return kPrintJSONFlag }
 		static var usage: String { return "Print the JSON response from GitHub before printing analysis results. This is mostly just useful for troubleshooting." }
 	}
+	enum SkipRequestsUsage: FlagRule {
+		static var name: String { return kSkipRequestsFlag }
+		static var usage: String { return "Skip requests to GitHub's APIs. The script will run using only events found in the cache file." }
+	}
 	enum SkipAnalysisUsage: FlagRule {
 		static var name: String { return kSkipAnalysisFlag }
 		static var usage: String { return "Skip the analysis of data. Use this flag to download and cache event data without performing analysis. This will render much of the other flags meaningless because many other options are only applied after new event data is cached for future use. When using this flag, only information about downloading and caching events is printed to the terminal and nothing is output to a CSV file." }
@@ -107,6 +111,7 @@ extension GitHubAnalysisInputs: InputDescriptions {
 					 quiet: false,
 					 outputCSV: false,
 					 printJSON: false,
+					 skipRequests: false,
 					 skipAnalysis: false,
 					 skipFootnotes: false)
 	}

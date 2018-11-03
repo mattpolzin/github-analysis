@@ -24,6 +24,7 @@ extension GitHubAnalysisInputs {
 	static var kQuietFlag: String { return "-quiet" }
 	static var kPrintJSONFlag: String { return "-print-json" }
 	static var kOutputCSVFlag: String { return "-csv" }
+	static var kSkipRequestsFlag: String { return "-skip-requests" }
 	static var kSkipAnalysisFlag: String { return "-skip-analysis" }
 	static var kSkipFootnotesFlag: String { return "-skip-footnotes" }
 	static var kHelpFlag: String { return "-help" }
