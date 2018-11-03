@@ -43,11 +43,12 @@ public struct StatTable {
     private struct UserColumn: Column {
         let header: String
         let total: String
-        let average: String
+		let repoAverage: String
+        let userAverage: String
         let userValues: [UserValue]
 
         var values: [String] {
-            return [header, total, average, ""] + userValues
+            return [header, total, repoAverage, userAverage, ""] + userValues
         }
     }
 
@@ -112,81 +113,76 @@ public struct StatTable {
         return .init(
             header: "",
             total: "Total",
-            average: "User Average",
+			repoAverage: "Repository Average",
+            userAverage: "User Average",
             userValues: users
         )
     }
 
     private var prOpenedColumn: UserColumn {
-        return .init(
-            header: "PRs opened",
-			total: string(describing: orgStat.pullRequestStats.opened.total),
-            average: string(describing: orgStat.pullRequestStats.opened.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.opened) } ?? "" }
-        )
+		let orgStat = \OrgStat.pullRequestStats.opened
+		let userStat = \UserStat.pullRequestStat.opened
+		return userColumn(header: "PRs opened",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     private var prClosedColumn: UserColumn {
-        return .init(
-            header: "PRs closed",
-            total: string(describing: orgStat.pullRequestStats.closed.total),
-            average: string(describing: orgStat.pullRequestStats.closed.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.closed) } ?? "" }
-        )
+		let orgStat = \OrgStat.pullRequestStats.closed
+		let userStat = \UserStat.pullRequestStat.closed
+		return userColumn(header: "PRs closed",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     private var avgPROpenLength: UserColumn {
         return .init(
             header: "Average PR open length (days)",
             total: "\\",
-            average: string(describing: orgStat.pullRequestStats.openLengths.average.perUser/(60 * 60 * 24)),
+			repoAverage: string(describing: orgStat.pullRequestStats.openLengths.average.perRepo/(60 * 60 * 24)),
+            userAverage: string(describing: orgStat.pullRequestStats.openLengths.average.perUser/(60 * 60 * 24)),
             userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.avgOpenLength/(60 * 60 * 24)) } ?? "" }
         )
     }
 
     private var prCommentsColumn: UserColumn {
-        return .init(
-            header: "PR comments",
-            total: string(describing: orgStat.pullRequestStats.comments.total),
-            average: string(describing: orgStat.pullRequestStats.comments.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.pullRequestStat.commentEvents) } ?? "" }
-        )
+		let orgStat = \OrgStat.pullRequestStats.comments
+		let userStat = \UserStat.pullRequestStat.commentEvents
+		return userColumn(header: "PR comments",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     private var linesOfCodeAddedColumn: UserColumn {
-        return .init(
-            header: "LOC Added",
-            total: string(describing: orgStat.codeStats.linesAdded.total),
-            average: string(describing: orgStat.codeStats.linesAdded.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesAdded) } ?? "" }
-        )
+		let orgStat = \OrgStat.codeStats.linesAdded
+		let userStat = \UserStat.codeStat.linesAdded
+		return userColumn(header: "LOC Added",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     private var linesOfCodeDeletedColumn: UserColumn {
-        return .init(
-            header: "LOC Deleted",
-            total: string(describing: orgStat.codeStats.linesDeleted.total),
-            average: string(describing: orgStat.codeStats.linesDeleted.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.linesDeleted) } ?? "" }
-        )
+		let orgStat = \OrgStat.codeStats.linesDeleted
+		let userStat = \UserStat.codeStat.linesDeleted
+		return userColumn(header: "LOC Deleted",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     private var totalLinesOfCodeColumn: UserColumn {
-        return .init(
-            header: "Total LOC",
-            total: string(describing: orgStat.codeStats.lines.total),
-            average: string(describing: orgStat.codeStats.lines.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.lines) } ?? "" }
-        )
+		let orgStat = \OrgStat.codeStats.lines
+		let userStat = \UserStat.codeStat.lines
+		return userColumn(header: "Total LOC",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     private var commitsColumn: UserColumn {
-        return .init(
-            header: "Commits",
-            total: string(describing: orgStat.codeStats.commits.total),
-            average: string(describing: orgStat.codeStats.commits.average.perUser),
-            userValues: users.map { orgStat.userStats[$0].map { string(describing: $0.codeStat.commits) } ?? "" }
-        )
+		let orgStat = \OrgStat.codeStats.commits
+		let userStat = \UserStat.codeStat.commits
+		return userColumn(header: "Commits",
+						  orgPath: orgStat,
+						  userPath: userStat)
     }
 
     // MARK: Repo Columns
@@ -253,5 +249,16 @@ public extension StatTable {
 	/// One use for this is printing the columns out in a stack to the terminal.
 	var columnStack: [(IndexColumn, [String])] {
  		return sections.flatMap { section in section.bodyColumns.map { (section.indexColumn.values, $0.values) } }
+	}
+}
+
+extension StatTable {
+	private func userColumn<B: Bound, T: CustomStringConvertible>(header: String, orgPath: KeyPath<OrgStat, OrgStat.StatAggregate<B, T>>, userPath: KeyPath<UserStat, BasicStat<B, T>>) -> StatTable.UserColumn {
+		let stat = orgStat[keyPath: orgPath]
+		return UserColumn(header: header,
+						  total: string(describing: stat.total),
+						  repoAverage: string(describing: stat.average.perRepo),
+						  userAverage: string(describing: stat.average.perUser),
+						  userValues: users.map { orgStat.userStats[$0].map { string(describing: $0[keyPath: userPath]) } ?? "" })
 	}
 }

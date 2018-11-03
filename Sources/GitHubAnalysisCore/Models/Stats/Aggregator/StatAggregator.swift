@@ -10,7 +10,8 @@ import Foundation
 public func aggregateStats(from gitData: (events: [GitHubEvent], gitStats: [RepoContributor]), ownedBy orgName: String) -> OrgStat {
     var userStatsByUser = [RepositoryUserKey: UserStat]()
 
-    let (events, gitStats) = gitData
+	let events = gitData.events.sorted { $0.createdAt < $1.createdAt }
+	let gitStats = gitData.gitStats
 
     // most efficient way to track open dates to calcuate open lengths is just to
     // store them per user as they come up

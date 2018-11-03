@@ -97,7 +97,7 @@ public extension OrgStat {
 		init(repoPrStats: [RepoStat.PullRequest], numberOfUsers: Int) {
 			let allOpenLengths = repoPrStats.map { $0.openLengths.total }.reduce([], +)
 			let prAvgOpenLength = allOpenLengths.reduce(0) { $0 + Double($1)/Double(allOpenLengths.count) }
-			let userAvgOpenLength = repoPrStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(numberOfUsers) }
+			let userAvgOpenLength = repoPrStats.map { $0.openLengths.average.perPullRequest }.reduce(0) { $0 + Double($1)/Double(numberOfUsers) }
 			let repoAvgOpenLength = repoPrStats.map { $0.openLengths.average.perUser }.reduce(0) { $0 + Double($1)/Double(repoPrStats.count) }
 			
 			openLengths = (total: allOpenLengths,
