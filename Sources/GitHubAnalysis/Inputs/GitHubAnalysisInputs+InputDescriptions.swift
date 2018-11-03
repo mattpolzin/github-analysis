@@ -126,6 +126,6 @@ extension GitHubAnalysisInputs: InputDescriptions {
 	static var flagInputs: [InputUsage.Type] {
 		let mirror = Mirror(reflecting: GitHubAnalysisInputs.dummy())
 		
-		return mirror.children.compactMap { $0.value as? InputUsage }.map { type(of: $0) }.filter { $0.usage is FlagRule.Type }
+		return mirror.children.compactMap { $0.value as? InputUsage }.map { type(of: $0) }.filter { $0.usage is FlagRule.Type }.prepending(VoidInput<PrintHelpUsage>.self)
 	}
 }
