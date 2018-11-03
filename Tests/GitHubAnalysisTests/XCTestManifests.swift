@@ -11,9 +11,12 @@ extension CodeStatTests {
 
 extension OrgStatTests {
     static let __allTests = [
+        ("test_aggregate", test_aggregate),
+        ("test_earliestEventIsEarliestEventOfAnyRepo", test_earliestEventIsEarliestEventOfAnyRepo),
         ("test_earliestReliableIsLatestEarliestDate", test_earliestReliableIsLatestEarliestDate),
         ("test_emptyReposAreUnreliableRepositories", test_emptyReposAreUnreliableRepositories),
         ("test_nonEmptyReposAreNotUnreliable", test_nonEmptyReposAreNotUnreliable),
+        ("test_OrgStatPullRequestOpenLengths", test_OrgStatPullRequestOpenLengths),
     ]
 }
 
