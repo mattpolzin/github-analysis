@@ -113,45 +113,6 @@ public struct PullRequestStat: Equatable {
 	}
 }
 
-public struct CodeStat: Equatable {
-	public let linesAdded: LimitlessStat<Int>
-	public let linesDeleted: LimitlessStat<Int>
-	public let commits: LimitlessStat<Int>
-	
-	/// The total lines affected (i.e. both added and deleted).
-	public var lines: LimitlessStat<Int> {
-		return zip(linesAdded, linesDeleted) { $0 + $1 }
-	}
-}
-
-public extension CodeStat {
-    static func +(lhs: CodeStat, rhs: CodeStat) -> CodeStat {
-        return .init(linesAdded: lhs.linesAdded + rhs.linesAdded,
-                     linesDeleted: lhs.linesDeleted + rhs.linesDeleted,
-                     commits: lhs.commits + rhs.commits)
-    }
-
-    static func +=(lhs: inout CodeStat, rhs: CodeStat) {
-        lhs = lhs + rhs
-    }
-	
-	init(linesAdded: Int, linesDeleted: Int, commits: Int) {
-		self.init(linesAdded: .init(value: linesAdded),
-				  linesDeleted: .init(value: linesDeleted),
-				  commits: .init(value: commits))
-	}
-
-    private init() {
-        linesAdded = 0
-        linesDeleted = 0
-        commits = 0
-    }
-
-    static var empty: CodeStat {
-        return CodeStat()
-    }
-}
-
 public extension PullRequestStat {
 	static func +(lhs: PullRequestStat, rhs: PullRequestStat) -> PullRequestStat {
 		return .init(opened: lhs.opened + rhs.opened,
